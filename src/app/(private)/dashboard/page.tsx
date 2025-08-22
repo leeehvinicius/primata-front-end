@@ -6,6 +6,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { format, subDays, parseISO, isWithinInterval } from "date-fns";
+import ExportPDFButton from "@/components/ExportPDFButton";
 
 // Paletas
 const COLORS_FIN = ["#22c55e", "#3b82f6", "#eab308"]; // pix, cartão, dinheiro
@@ -139,6 +140,7 @@ export default function DashboardPage() {
     return (
         <div className="space-y-6">
             {/* Filtros */}
+            {/* Filtros */}
             <div className="flex flex-wrap gap-3 items-end">
                 <div>
                     <label className="block text-sm text-neutral-400 mb-1">De</label>
@@ -160,6 +162,7 @@ export default function DashboardPage() {
                         className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                 </div>
+
                 <div className="ml-auto flex gap-2">
                     <PresetButton label="7 dias" onClick={() => {
                         setStart(format(subDays(new Date(), 7), "yyyy-MM-dd"));
@@ -173,93 +176,102 @@ export default function DashboardPage() {
                         setStart(format(subDays(new Date(), 90), "yyyy-MM-dd"));
                         setEnd(format(new Date(), "yyyy-MM-dd"));
                     }} />
+
+                    {/* Botão Exportar PDF */}
+                    <ExportPDFButton
+                        targetId="dash-export"
+                        filename={`primata-dashboard_${start}_a_${end}.pdf`}
+                        label="Exportar PDF"
+                        landscape
+                    />
                 </div>
             </div>
-
-            {/* Bloco Financeiro */}
-            <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">Financeiro</h2>
-                    <div className="text-sm text-neutral-400">
-                        Total no período: <span className="text-white font-semibold">R$ {totalFin.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+            <div id="dash-export" className="space-y-6">
+                {/* Bloco Financeiro */}
+                <section className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-semibold">Financeiro</h2>
+                        <div className="text-sm text-neutral-400">
+                            Total no período: <span className="text-white font-semibold">R$ {totalFin.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        </div>
                     </div>
-                </div>
 
-                <div className="grid lg:grid-cols-2 gap-6">
-                    <ChartCard title="Participação por método (R$)">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                                <Pie
-                                    data={finAgg}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    outerRadius={110}
-                                    innerRadius={60}
-                                    paddingAngle={2}
-                                >
-                                    {finAgg.map((_, i) => <Cell key={i} fill={COLORS_FIN[i % COLORS_FIN.length]} />)}
-                                </Pie>
-                                <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </ChartCard>
+                    <div className="grid lg:grid-cols-2 gap-6">
+                        <ChartCard title="Participação por método (R$)">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={finAgg}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        outerRadius={110}
+                                        innerRadius={60}
+                                        paddingAngle={2}
+                                    >
+                                        {finAgg.map((_, i) => <Cell key={i} fill={COLORS_FIN[i % COLORS_FIN.length]} />)}
+                                    </Pie>
+                                    <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </ChartCard>
 
-                    <ChartCard title="Quantidade por método">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={finAggCount} barSize={32}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fill: "#a3a3a3" }} />
-                                <YAxis tick={{ fill: "#a3a3a3" }} />
-                                <Tooltip />
-                                <Bar dataKey="qtd">
-                                    {finAggCount.map((_, i) => <Cell key={i} fill={COLORS_FIN[i % COLORS_FIN.length]} />)}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </ChartCard>
-                </div>
-            </section>
+                        <ChartCard title="Quantidade por método">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={finAggCount} barSize={32}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fill: "#a3a3a3" }} />
+                                    <YAxis tick={{ fill: "#a3a3a3" }} />
+                                    <Tooltip />
+                                    <Bar dataKey="qtd">
+                                        {finAggCount.map((_, i) => <Cell key={i} fill={COLORS_FIN[i % COLORS_FIN.length]} />)}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartCard>
+                    </div>
+                </section>
 
-            {/* Bloco Serviços */}
-            <section className="space-y-4">
-                <h2 className="text-xl font-semibold">Serviços</h2>
+                {/* Bloco Serviços */}
+                <section className="space-y-4">
+                    <h2 className="text-xl font-semibold">Serviços</h2>
 
-                <div className="grid lg:grid-cols-2 gap-6">
-                    <ChartCard title="Participação por serviço (R$)">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                                <Pie
-                                    data={srvAgg}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    outerRadius={110}
-                                    innerRadius={60}
-                                    paddingAngle={2}
-                                >
-                                    {srvAgg.map((_, i) => <Cell key={i} fill={COLORS_SRV[i % COLORS_SRV.length]} />)}
-                                </Pie>
-                                <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-                                <Legend />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </ChartCard>
+                    <div className="grid lg:grid-cols-2 gap-6">
+                        <ChartCard title="Participação por serviço (R$)">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={srvAgg}
+                                        dataKey="value"
+                                        nameKey="name"
+                                        outerRadius={110}
+                                        innerRadius={60}
+                                        paddingAngle={2}
+                                    >
+                                        {srvAgg.map((_, i) => <Cell key={i} fill={COLORS_SRV[i % COLORS_SRV.length]} />)}
+                                    </Pie>
+                                    <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+                                    <Legend />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </ChartCard>
 
-                    <ChartCard title="Quantidade por serviço">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={srvAggCount} barSize={32}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="name" tick={{ fill: "#a3a3a3" }} />
-                                <YAxis tick={{ fill: "#a3a3a3" }} />
-                                <Tooltip />
-                                <Bar dataKey="qtd">
-                                    {srvAggCount.map((_, i) => <Cell key={i} fill={COLORS_SRV[i % COLORS_SRV.length]} />)}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </ChartCard>
-                </div>
-            </section>
+                        <ChartCard title="Quantidade por serviço">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={srvAggCount} barSize={32}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fill: "#a3a3a3" }} />
+                                    <YAxis tick={{ fill: "#a3a3a3" }} />
+                                    <Tooltip />
+                                    <Bar dataKey="qtd">
+                                        {srvAggCount.map((_, i) => <Cell key={i} fill={COLORS_SRV[i % COLORS_SRV.length]} />)}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartCard>
+                    </div>
+                </section>
+            </div>
         </div>
     );
 }
