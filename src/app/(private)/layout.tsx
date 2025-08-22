@@ -1,32 +1,27 @@
-'use client'
-import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
-import Topbar from '@/components/Topbar'
-import { useAuth } from '@/lib/auth'
+// app/(private)/layout.tsx
+"use client";
+
+import Sidebar from "@/components/Sidebar";
+import Topbar from "@/components/Topbar";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function PrivateLayout({ children }: { children: React.ReactNode }) {
-    const router = useRouter()
-    const pathname = usePathname()
-    const { restore } = useAuth()
-    const [ready, setReady] = useState(false)
+    const router = useRouter();
 
+    // Guard no client (extra ao middleware)
     useEffect(() => {
-        restore()
-        const token = typeof window !== 'undefined' && localStorage.getItem('primata_token')
-        if (!token) router.replace('/login')
-        else setReady(true)
-    }, [restore, router, pathname])
-
-    if (!ready) return null
+        const hasAuth = document.cookie.split("; ").some((c) => c.startsWith("auth=1"));
+        if (!hasAuth) router.replace("/login");
+    }, [router]);
 
     return (
-        <div className="h-screen grid grid-cols-[260px_1fr] bg-[#0b1220] text-white">
+        <div className="min-h-screen grid grid-cols-[260px_1fr]">
             <Sidebar />
             <div className="flex flex-col">
                 <Topbar />
-                <main className="p-6 overflow-auto">{children}</main>
+                <main className="p-6">{children}</main>
             </div>
         </div>
-    )
+    );
 }
