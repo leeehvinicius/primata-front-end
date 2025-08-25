@@ -5,10 +5,10 @@ import { useAuth } from '@/lib/auth'
 import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut } from 'lucide-react'
 
 const items = [
-    { href: '/(private)', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/(private)/users', label: 'Usuários', icon: Users2 },
-    { href: '/(private)/billing', label: 'Financeiro', icon: CreditCard },
-    { href: '/(private)/services', label: 'Serviços', icon: Scissors },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/users', label: 'Usuários', icon: Users2 },
+    { href: '/billing', label: 'Financeiro', icon: CreditCard },
+    { href: '/services', label: 'Serviços', icon: Scissors },
 ]
 
 export default function Sidebar() {
