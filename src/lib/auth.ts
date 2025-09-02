@@ -1,34 +1,73 @@
 'use client'
 import { create } from 'zustand'
+import { AuthService } from './authService'
+import type { LoginCredentials, UserProfile, AuthState } from '../types/auth'
 
-type User = { name: string; email: string }
-type AuthState = {
-    user: User | null
-    login: (email: string, password: string) => Promise<boolean>
-    logout: () => void
-    restore: () => void
-}
-
-export const useAuth = create<AuthState>((set) => ({
+export const useAuth = create<AuthState>((set, get) => ({
     user: null,
-    async login(email, password) {
-        await new Promise(r => setTimeout(r, 400))
-        const ok = email.length > 3 && password.length > 3
-        if (ok) {
-            const user = { name: 'Recepção', email }
-            localStorage.setItem('primata_token', 'mock-token')
-            localStorage.setItem('primata_user', JSON.stringify(user))
-            set({ user })
+    isLoading: false,
+
+    async login(credentials: LoginCredentials) {
+        set({ isLoading: true })
+        try {
+            // Faz login na API
+            await AuthService.login(credentials)
+            
+            // Busca o perfil do usuário
+            const profile = await AuthService.getProfile()
+            
+            set({ user: profile, isLoading: false })
+            return true
+        } catch (error) {
+            console.error('Login failed:', error)
+            set({ isLoading: false })
+            return false
         }
-        return ok
     },
-    logout() {
-        localStorage.removeItem('primata_token')
-        localStorage.removeItem('primata_user')
-        set({ user: null })
+
+    async logout() {
+        set({ isLoading: true })
+        try {
+            await AuthService.logout()
+        } catch (error) {
+            console.error('Logout error:', error)
+        } finally {
+            set({ user: null, isLoading: false })
+        }
     },
-    restore() {
-        const raw = localStorage.getItem('primata_user')
-        if (raw) set({ user: JSON.parse(raw) })
+
+    async restore() {
+        set({ isLoading: true })
+        try {
+            // Verifica se há tokens válidos
+            if (AuthService.isAuthenticated()) {
+                // Tenta obter o perfil
+                const profile = await AuthService.getProfile()
+                set({ user: profile, isLoading: false })
+            } else {
+                // Se não há tokens, tenta obter do localStorage
+                const userFromStorage = AuthService.getUserFromStorage()
+                set({ user: userFromStorage, isLoading: false })
+            }
+        } catch (error) {
+            console.error('Restore failed:', error)
+            // Se falhar, limpa o estado e tokens
+            AuthService.clearLocalData()
+            set({ user: null, isLoading: false })
+        }
     },
+
+    async refreshProfile() {
+        try {
+            // Só tenta atualizar se estiver autenticado
+            if (AuthService.isAuthenticated() && get().user) {
+                const profile = await AuthService.getProfile()
+                set({ user: profile })
+            }
+        } catch (error) {
+            console.error('Profile refresh failed:', error)
+            // Se falhar ao buscar perfil, faz logout
+            await get().logout()
+        }
+    }
 }))

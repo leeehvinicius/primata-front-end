@@ -1,269 +1,764 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useState } from "react"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
 import { toast } from "sonner"
+import { useUsers } from "@/lib/useUsers"
+import LoadingSpinner from "@/components/ui/LoadingSpinner"
+import Modal from "@/components/ui/Modal"
+import { 
+    Search, 
+    Filter, 
+    Plus, 
+    Edit, 
+    Trash2, 
+    UserCheck, 
+    UserX, 
+    Phone, 
+    Calendar, 
+    Shield, 
+    Users, 
+    UserPlus,
+    Mail,
+    Crown,
+    Stethoscope,
+    Headphones,
+    Wrench,
+    AlertTriangle
+} from "lucide-react"
 
-// 👇 importe os componentes refatorados
-import AccessModal, { PermissionKey } from "@/components/users/AccessModal"
-import ProfileFormModal from "@/components/users/ProfileFormModal"
-import UserFormModal from "@/components/users/UserFormModal"
+// ===== Schemas de Validação =====
+const createUserSchema = z.object({
+    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+    email: z.string().email("Email inválido"),
+    phone: z.string().optional(),
+    role: z.string().min(1, "Selecione um perfil"),
+    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+    isActive: z.boolean()
+})
 
-/* ================== Tipos & Mocks ================== */
-type Profile = { id: string; name: string; description?: string; permissions: PermissionKey[] }
-type User = {
-    id: string
-    name: string
-    email: string
-    phone?: string
-    profileId: string
-    active: boolean
-    createdAt?: string
+const editUserSchema = z.object({
+    name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+    email: z.string().email("Email inválido"),
+    phone: z.string().optional(),
+    role: z.string().min(1, "Selecione um perfil"),
+    isActive: z.boolean()
+})
+
+type CreateUserFormData = z.infer<typeof createUserSchema>
+type EditUserFormData = z.infer<typeof editUserSchema>
+
+// ===== Tipos e Utils =====
+type UserRole = 'ADMINISTRADOR' | 'MEDICO' | 'RECEPCIONISTA' | 'SERVICOS_GERAIS'
+
+const roleConfig = {
+    'ADMINISTRADOR': {
+        icon: Crown,
+        name: 'Administrador',
+        color: 'text-purple-400',
+        bg: 'bg-purple-500/10',
+        border: 'border-purple-500/20'
+    },
+    'MEDICO': {
+        icon: Stethoscope,
+        name: 'Médico',
+        color: 'text-blue-400',
+        bg: 'bg-blue-500/10',
+        border: 'border-blue-500/20'
+    },
+    'RECEPCIONISTA': {
+        icon: Headphones,
+        name: 'Recepcionista',
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/20'
+    },
+    'SERVICOS_GERAIS': {
+        icon: Wrench,
+        name: 'Serviços Gerais',
+        color: 'text-amber-400',
+        bg: 'bg-amber-500/10',
+        border: 'border-amber-500/20'
+    }
 }
 
-const ALL_MODULES: { key: PermissionKey; label: string }[] = [
-    { key: "dashboard", label: "Dashboard" },
-    { key: "patients", label: "Pacientes" },
-    { key: "partners", label: "Parceiros/Convênios" },
-    { key: "appointments", label: "Agendamentos" },
-    { key: "services", label: "Serviços" },
-    { key: "billing", label: "Financeiro" },
-    { key: "users", label: "Usuários" },
-    { key: "settings", label: "Configurações" },
-]
-
-const initialProfiles: Profile[] = [
-    { id: "p1", name: "Recepção", description: "Atendimento e agendamentos", permissions: ["dashboard", "patients", "appointments", "billing"] },
-    { id: "p2", name: "Administrador", description: "Acesso total ao sistema", permissions: ALL_MODULES.map(m => m.key) },
-]
-
-const initialUsers: User[] = [
-    { id: "u1", name: "Ana Souza", email: "ana@clinic.com", phone: "11 99999-0000", profileId: "p1", active: true, createdAt: "2025-08-20" },
-    { id: "u2", name: "Carlos Lima", email: "carlos@clinic.com", profileId: "p2", active: true, createdAt: "2025-08-18" },
-]
-
-/* ================== Schemas ================== */
-const userSchema = z.object({
-    name: z.string().min(2, "Informe o nome"),
-    email: z.string().email("E-mail inválido"),
-    phone: z.string().optional(),
-    password: z.string().min(4, "Mínimo 4 caracteres").optional(), // mock
-    profileId: z.string().min(1, "Selecione um perfil"),
-    active: z.boolean().default(true),
-})
-type UserForm = z.infer<typeof userSchema>
-
-const profileSchema = z.object({
-    name: z.string().min(2, "Informe o nome do perfil"),
-    description: z.string().optional(),
-})
-type ProfileForm = z.infer<typeof profileSchema>
-
-/* ================== Utils ================== */
-const genId = (p: "u" | "p") => `${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
-const PencilIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="none" {...props}><path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L8 18l-4 1 1-4 11.5-11.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
-)
-
-/* ================== Página ================== */
-export default function UsersPage() {
-    const [profiles, setProfiles] = useState<Profile[]>(initialProfiles)
-    const [users, setUsers] = useState<User[]>(initialUsers)
-    const [q, setQ] = useState("")
-
-    // modais usuário
-    const [openUser, setOpenUser] = useState(false)
-    const [openUserEdit, setOpenUserEdit] = useState(false)
-    const [editingUser, setEditingUser] = useState<User | null>(null)
-
-    // modais perfil
-    const [openProfile, setOpenProfile] = useState(false)
-    const [openEditProfile, setOpenEditProfile] = useState(false)
-    const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
-
-    // modal níveis de acesso
-    const [openAccess, setOpenAccess] = useState(false)
-    const [editingAccessProfile, setEditingAccessProfile] = useState<Profile | null>(null)
-    const [accessDraft, setAccessDraft] = useState<PermissionKey[]>([])
-
-    // forms
-    const {
-        register: registerUser,
-        handleSubmit: handleSubmitUser,
-        reset: resetUser,
-        formState: { isSubmitting: savingUser, errors: userErrors },
-    } = useForm<UserForm>({ resolver: zodResolver(userSchema), defaultValues: { active: true } })
-
-    const {
-        register: registerUserEdit,
-        handleSubmit: handleSubmitUserEdit,
-        reset: resetUserEdit,
-        formState: { isSubmitting: savingUserEdit, errors: userEditErrors },
-    } = useForm<UserForm>({ resolver: zodResolver(userSchema) })
-
-    const {
-        register: registerProfile,
-        handleSubmit: handleSubmitProfile,
-        reset: resetProfile,
-        formState: { isSubmitting: savingProfile, errors: profileErrors },
-    } = useForm<ProfileForm>({ resolver: zodResolver(profileSchema) })
-
-    const {
-        register: registerProfileEdit,
-        handleSubmit: handleSubmitProfileEdit,
-        reset: resetProfileEdit,
-        formState: { isSubmitting: savingProfileEdit, errors: profileEditErrors },
-    } = useForm<ProfileForm>({ resolver: zodResolver(profileSchema) })
-
-    // busca
-    const filtered = useMemo(() => {
-        const term = q.trim().toLowerCase()
-        if (!term) return users
-        const byProfileId = (id: string) => profiles.find(p => p.id === id)?.name?.toLowerCase() ?? ""
-        return users.filter(u =>
-            u.name.toLowerCase().includes(term) ||
-            u.email.toLowerCase().includes(term) ||
-            byProfileId(u.profileId).includes(term)
-        )
-    }, [q, users, profiles])
-
-    const profileName = (id: string) => profiles.find(p => p.id === id)?.name ?? "—"
-
-    /* ===== Usuário ===== */
-    function openEditUser(u: User) {
-        setEditingUser(u)
-        resetUserEdit({
-            name: u.name, email: u.email, phone: u.phone ?? "",
-            password: "", profileId: u.profileId, active: u.active,
-        })
-        setOpenUserEdit(true)
-    }
-    function toggleUser(id: string, active: boolean) {
-        setUsers(prev => prev.map(u => (u.id === id ? { ...u, active } : u)))
-    }
-    async function onCreateUser(values: UserForm) {
-        const novo: User = {
-            id: genId("u"), name: values.name, email: values.email,
-            phone: values.phone || undefined, profileId: values.profileId,
-            active: !!values.active, createdAt: new Date().toISOString().slice(0, 10),
-        }
-        setUsers(prev => [novo, ...prev])
-        toast.success("Usuário cadastrado!")
-        resetUser({ active: true }); setOpenUser(false)
-    }
-    async function onUpdateUser(values: UserForm) {
-        if (!editingUser) return
-        setUsers(prev => prev.map(u =>
-            u.id === editingUser.id
-                ? { ...u, name: values.name, email: values.email, phone: values.phone || undefined, profileId: values.profileId, active: values.active }
-                : u
-        ))
-        toast.success("Usuário atualizado!")
-        setOpenUserEdit(false); setEditingUser(null)
-    }
-
-    /* ===== Perfil ===== */
-    async function onCreateProfile(values: ProfileForm) {
-        const novo: Profile = { id: genId("p"), name: values.name, description: values.description || undefined, permissions: [] }
-        setProfiles(prev => [novo, ...prev])
-        toast.success("Perfil cadastrado!")
-        resetProfile({})
-        // mantém o modal aberto se quiser continuar cadastrando
-    }
-    function onOpenEditProfile(p: Profile) {
-        setEditingProfile(p)
-        resetProfileEdit({ name: p.name, description: p.description ?? "" })
-        setOpenEditProfile(true)
-    }
-    async function onUpdateProfile(values: ProfileForm) {
-        if (!editingProfile) return
-        setProfiles(prev => prev.map(p => p.id === editingProfile.id ? { ...p, name: values.name, description: values.description } : p))
-        toast.success("Perfil atualizado!")
-        setOpenEditProfile(false); setEditingProfile(null)
-    }
-
-    /* ===== Níveis de acesso ===== */
-    function openAccessModal(profile: Profile) {
-        setEditingAccessProfile(profile)
-        setAccessDraft(profile.permissions)
-        setOpenAccess(true)
-    }
-    function togglePermission(key: PermissionKey) {
-        setAccessDraft(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
-    }
-    function saveAccess() {
-        if (!editingAccessProfile) return
-        setProfiles(prev => prev.map(p => p.id === editingAccessProfile.id ? { ...p, permissions: accessDraft } : p))
-        toast.success("Níveis de acesso salvos!")
-        setOpenAccess(false); setEditingAccessProfile(null)
-    }
-
-    /* ================== UI ================== */
+// ===== Componentes UI =====
+function StatCard({ title, value, icon: Icon, color, trend }: {
+    title: string
+    value: number
+    icon: any
+    color: string
+    trend?: { value: number; isPositive: boolean }
+}) {
     return (
-        <div className="grid gap-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-semibold">Usuários</h1>
-                <div className="flex gap-2">
-                    <input
-                        className="input w-72"
-                        placeholder="Buscar por nome, e-mail ou perfil..."
-                        value={q}
-                        onChange={e => setQ(e.target.value)}
+        <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-xl ${color}`}>
+                    <Icon className="w-6 h-6" />
+                </div>
+                {trend && (
+                    <div className={`text-sm ${trend.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                        {trend.isPositive ? '+' : ''}{trend.value}%
+                    </div>
+                )}
+            </div>
+            <div className="text-3xl font-bold text-white mb-1">{value}</div>
+            <div className="text-white/60 text-sm">{title}</div>
+        </div>
+    )
+}
+
+function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
+    user: any
+    onEdit: (user: any) => void
+    onToggleStatus: (userId: string) => void
+    onDelete: (userId: string) => void
+}) {
+    const userRole = (user as any).profile?.role || 'SERVICOS_GERAIS'
+    const config = roleConfig[userRole as UserRole] || roleConfig['SERVICOS_GERAIS']
+    const Icon = config.icon
+
+    return (
+        <tr className="border-t border-white/5 hover:bg-white/5 transition-colors">
+            <td className="py-4 pr-4">
+                <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${config.bg} ${config.border} border`}>
+                        <Icon className={`w-4 h-4 ${config.color}`} />
+                    </div>
+                    <div>
+                        <div className="font-medium text-white">{user.name || 'Nome não informado'}</div>
+                        <div className={`text-sm ${config.color}`}>{config.name}</div>
+                    </div>
+                </div>
+            </td>
+            <td className="py-4 pr-4">
+                <div className="flex items-center gap-2 text-white/70">
+                    <Mail className="w-4 h-4" />
+                    <span className="truncate max-w-[200px]">{user.email || 'Email não informado'}</span>
+                </div>
+            </td>
+            <td className="py-4 pr-4">
+                {(user as any).profile?.phone ? (
+                    <div className="flex items-center gap-2 text-white/70">
+                        <Phone className="w-4 h-4" />
+                        <span>{(user as any).profile.phone}</span>
+                    </div>
+                ) : (
+                    <span className="text-white/50">-</span>
+                )}
+            </td>
+            <td className="py-4 pr-4">
+                <div className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
+                    (user as any).profile?.isActive === true
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                }`}>
+                    {(user as any).profile?.isActive === true ? 'Ativo' : 'Inativo'}
+                </div>
+            </td>
+            <td className="py-4 pr-4 text-white/50 text-sm">
+                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
+            </td>
+            <td className="py-4 pr-0">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => onEdit(user)}
+                        className="p-2 text-white/50 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        title="Editar usuário"
+                    >
+                        <Edit size={16} />
+                    </button>
+                    <button
+                        onClick={() => onToggleStatus(user.id)}
+                        className={`p-2 rounded-lg transition-colors ${
+                            (user as any).profile?.isActive === true
+                                ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' 
+                                : 'text-white/50 hover:text-green-400 hover:bg-green-500/10'
+                        }`}
+                        title={(user as any).profile?.isActive === true ? 'Desativar usuário' : 'Ativar usuário'}
+                    >
+                        {(user as any).profile?.isActive === true ? <UserX size={16} /> : <UserCheck size={16} />}
+                    </button>
+                    <button
+                        onClick={() => onDelete(user.id)}
+                        className="p-2 text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Excluir usuário"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            </td>
+        </tr>
+    )
+}
+
+// Modal de formulário de usuário
+function UserFormModal({ 
+    open, 
+    onClose, 
+    user, 
+    isEdit = false,
+    onCreateUser,
+    onUpdateUser
+}: {
+    open: boolean
+    onClose: () => void
+    user?: any
+    isEdit?: boolean
+    onCreateUser: (data: any) => Promise<void>
+    onUpdateUser: (userId: string, data: any) => Promise<void>
+}) {
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+        reset,
+        setValue
+    } = useForm({
+        resolver: zodResolver(isEdit ? editUserSchema : createUserSchema) as any,
+        defaultValues: {
+            name: '',
+            email: '',
+            phone: '',
+            role: '',
+            password: '',
+            isActive: true
+        }
+    })
+
+    // Preenche o formulário quando editar
+    React.useEffect(() => {
+        
+        if (open && user && isEdit) {
+            
+            const formData = {
+                name: user.name || '',
+                email: user.email || '',
+                phone: (user as any).profile?.phone || '',
+                role: (user as any).profile?.role || '',
+                isActive: (user as any).profile?.isActive !== false
+            }
+            
+            
+            setValue('name', formData.name)
+            setValue('email', formData.email)
+            setValue('phone', formData.phone)
+            setValue('role', formData.role)
+            setValue('isActive', formData.isActive)
+        } else if (open && !isEdit) {
+            reset()
+        }
+    }, [open, user, isEdit, setValue, reset])
+
+    const onSubmit = async (data: any) => {
+        try {
+            
+            
+            
+            
+            if (isEdit && user) {
+                
+                
+                
+                try {
+                    await onUpdateUser(user.id, data)
+                    
+                    toast.success('Usuário atualizado com sucesso!')
+                    onClose()
+                    reset()
+                } catch (updateError) {
+                    console.error('onUpdateUser failed:', updateError)
+                    toast.error('Erro ao atualizar usuário')
+                    throw updateError
+                }
+            } else {
+                await onCreateUser(data)
+                toast.success('Usuário criado com sucesso!')
+                onClose()
+                reset()
+            }
+        } catch (error) {
+            console.error('Form submission error:', error)
+            toast.error('Erro ao salvar usuário')
+        }
+    }
+
+    const roles = [
+        { value: 'ADMINISTRADOR', label: 'Administrador' },
+        { value: 'MEDICO', label: 'Médico' },
+        { value: 'RECEPCIONISTA', label: 'Recepcionista' },
+        { value: 'SERVICOS_GERAIS', label: 'Serviços Gerais' }
+    ]
+
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            title={isEdit ? 'Editar Usuário' : 'Novo Usuário'}
+            className="max-w-2xl"
+        >
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm text-white/70 mb-2">Nome*</label>
+                        <input 
+                            className="input" 
+                            {...register("name")}
+                            placeholder="Nome completo"
+                        />
+                        {errors.name && (
+                            <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-white/70 mb-2">Email*</label>
+                        <input 
+                            className="input" 
+                            type="email"
+                            {...register("email")}
+                            placeholder="email@exemplo.com"
+                        />
+                        {errors.email && (
+                            <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-white/70 mb-2">Telefone</label>
+                        <input 
+                            className="input" 
+                            {...register("phone")}
+                            placeholder="(11) 99999-9999"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-white/70 mb-2">Perfil*</label>
+                        <select className="input" {...register("role")}>
+                            <option value="">Selecione um perfil</option>
+                            {roles.map((role) => (
+                                <option key={role.value} value={role.value}>
+                                    {role.label}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.role && (
+                            <p className="text-red-400 text-sm mt-1">{errors.role.message}</p>
+                        )}
+                    </div>
+
+                    {!isEdit && (
+                        <div>
+                            <label className="block text-sm text-white/70 mb-2">Senha*</label>
+                            <input 
+                                className="input" 
+                                type="password"
+                                {...register("password")}
+                                placeholder="Mínimo 6 caracteres"
+                            />
+                            {errors.password && (
+                                <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <input 
+                        type="checkbox" 
+                        className="accent-blue-500"
+                        {...register("isActive")}
                     />
-                    <button className="btn" onClick={() => setOpenProfile(true)}>Novo perfil</button>
-                    <button className="btn btn-primary" onClick={() => setOpenUser(true)}>Novo usuário</button>
+                    <label className="text-sm text-white/70">Usuário ativo</label>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                    <button 
+                        type="button" 
+                        className="btn" 
+                        onClick={onClose}
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        type="submit" 
+                        className="btn btn-primary"
+                        disabled={isSubmitting}
+                        onClick={() => console.log('Save button clicked - isEdit:', isEdit, 'isSubmitting:', isSubmitting)}
+                    >
+                        {isSubmitting ? 'Salvando...' : (isEdit ? 'Salvar alterações' : 'Criar usuário')}
+                    </button>
+                </div>
+            </form>
+        </Modal>
+    )
+}
+
+// Modal de confirmação de exclusão
+function DeleteConfirmationModal({ 
+    open, 
+    onClose, 
+    onConfirm, 
+    userName 
+}: {
+    open: boolean
+    onClose: () => void
+    onConfirm: () => void
+    userName: string
+}) {
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            title="Confirmar exclusão"
+            className="max-w-md"
+        >
+            <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <div className="flex-1">
+                    <h4 className="text-white font-medium mb-2">Excluir usuário</h4>
+                    <p className="text-white/70 text-sm mb-4">
+                        Tem certeza que deseja excluir o usuário <strong>{userName}</strong>? 
+                        Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex gap-3">
+                        <button 
+                            className="btn flex-1" 
+                            onClick={onClose}
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            className="btn bg-red-600 hover:bg-red-700 text-white flex-1" 
+                            onClick={onConfirm}
+                        >
+                            Excluir
+                        </button>
+                    </div>
                 </div>
             </div>
+        </Modal>
+    )
+}
 
-            {/* Lista de Usuários */}
+export default function UsersPage() {
+    const {
+        users,
+        loading,
+        error,
+        pagination,
+        stats,
+        roles,
+        searchUsers,
+        filterByRole,
+        filterByStatus,
+        toggleUserStatus,
+        deleteUser,
+        createUser,
+        updateUser,
+        refreshUsers
+    } = useUsers()
+
+    const [searchTerm, setSearchTerm] = useState("")
+    const [selectedRole, setSelectedRole] = useState<string>("")
+    const [selectedStatus, setSelectedStatus] = useState<string>("")
+    const [showFilters, setShowFilters] = useState(false)
+    
+    // Estados dos modais
+    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [userToDelete, setUserToDelete] = useState<any>(null)
+
+    // ===== Handlers =====
+    const handleSearch = () => {
+        searchUsers(searchTerm)
+    }
+
+    const handleRoleFilter = (role: string) => {
+        setSelectedRole(role)
+        filterByRole(role)
+    }
+
+    const handleStatusFilter = (status: string) => {
+        setSelectedStatus(status)
+        filterByStatus(status === "active")
+    }
+
+    const handleToggleStatus = async (userId: string) => {
+        try {
+            const result = await toggleUserStatus(userId)
+            
+            if (result) {
+                toast.success('Status do usuário atualizado!')
+            } else {
+                toast.error('Erro ao atualizar status')
+            }
+        } catch (error) {
+            console.error('handleToggleStatus error:', error)
+            toast.error('Erro ao atualizar status')
+        }
+    }
+
+    const handleDeleteUser = (userId: string) => {
+        
+        const user = users.find(u => u.id === userId)
+        if (user) {
+            
+            setUserToDelete(user)
+            setShowDeleteModal(true)
+        } else {
+            console.error('User not found for ID:', userId)
+            toast.error('Usuário não encontrado')
+        }
+    }
+
+    const handleConfirmDelete = async () => {
+        if (userToDelete) {
+            try {
+                const success = await deleteUser(userToDelete.id)
+                if (success) {
+                    toast.success('Usuário excluído com sucesso!')
+                    setShowDeleteModal(false)
+                    setUserToDelete(null)
+                } else {
+                    // O erro já foi tratado no hook useUsers
+                    toast.error('Não foi possível excluir o usuário')
+                }
+            } catch (error) {
+                console.error('Delete user error:', error)
+                toast.error('Erro inesperado ao excluir usuário')
+            }
+        }
+    }
+
+    const handleEditUser = (user: any) => {
+        
+        setSelectedUser(user)
+        setShowEditModal(true)
+    }
+
+    const handleCreateUser = () => {
+        setSelectedUser(null)
+        setShowCreateModal(true)
+    }
+
+    const handleCreateUserSubmit = async (data: any) => {
+        try {
+            await createUser({
+                name: data.name,
+                email: data.email,
+                password: data.password,
+                role: data.role,
+                phone: data.phone
+            })
+            setShowCreateModal(false)
+        } catch (error) {
+            throw error
+        }
+    }
+
+    const handleUpdateUserSubmit = async (userId: string, data: any) => {
+        try {
+            
+            
+            
+            const updateData = {
+                name: data.name,
+                role: data.role,
+                phone: data.phone,
+                isActive: data.isActive
+            }
+            
+            
+            
+            const result = await updateUser(userId, updateData)
+            
+            
+            if (result) {
+                
+                setShowEditModal(false)
+            } else {
+                console.error('Update failed - no result returned')
+                toast.error('Falha ao atualizar usuário')
+            }
+        } catch (error) {
+            console.error('Update user error in handleUpdateUserSubmit:', error)
+            toast.error('Erro ao atualizar usuário')
+            // Re-throw o erro para que seja capturado pelo onSubmit
+            throw error
+        }
+    }
+
+    // ===== UI =====
+    if (loading && users.length === 0) {
+        return (
+            <div className="min-h-screen grid place-items-center">
+                <LoadingSpinner size="lg" text="Carregando usuários..." />
+            </div>
+        )
+    }
+
+    const safePagination = pagination || { page: 1, limit: 10, total: 0, totalPages: 0 }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold text-white">Usuários</h1>
+                    <p className="text-white/60 mt-1">Gerencie todos os usuários do sistema</p>
+                </div>
+                <button 
+                    className="btn btn-primary flex items-center gap-2"
+                    onClick={handleCreateUser}
+                >
+                    <UserPlus size={20} />
+                    Novo Usuário
+                </button>
+            </div>
+
+            {/* Stats Cards */}
+            {stats && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCard
+                        title="Total de Usuários"
+                        value={stats.totalUsers}
+                        icon={Users}
+                        color="bg-blue-500/10 text-blue-400"
+                        trend={{ value: 12, isPositive: true }}
+                    />
+                    <StatCard
+                        title="Usuários Ativos"
+                        value={stats.activeUsers}
+                        icon={UserCheck}
+                        color="bg-green-500/10 text-green-400"
+                        trend={{ value: 8, isPositive: true }}
+                    />
+                    <StatCard
+                        title="Usuários Inativos"
+                        value={stats.inactiveUsers}
+                        icon={UserX}
+                        color="bg-red-500/10 text-red-400"
+                        trend={{ value: -3, isPositive: false }}
+                    />
+                </div>
+            )}
+
+            {/* Search and Filters */}
             <div className="card p-6">
-                <h3 className="text-lg font-semibold mb-4">Usuários cadastrados</h3>
+                <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Buscar usuários por nome, email..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            className="input pl-10"
+                        />
+                    </div>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`btn flex items-center gap-2 ${
+                            showFilters 
+                                ? 'btn-primary' 
+                                : 'bg-[#0b1220] text-white/70 hover:bg-white/5'
+                        }`}
+                    >
+                        <Filter size={20} />
+                        Filtros
+                    </button>
+                </div>
+
+                {/* Filter Panel */}
+                {showFilters && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-white/10">
+                        <div>
+                            <label className="block text-sm text-white/70 mb-2">Role</label>
+                            <select
+                                value={selectedRole}
+                                onChange={(e) => handleRoleFilter(e.target.value)}
+                                className="input"
+                            >
+                                <option value="">Todos os roles</option>
+                                {roles.map((role) => (
+                                    <option key={role.role} value={role.role}>
+                                        {role.description}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-white/70 mb-2">Status</label>
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => handleStatusFilter(e.target.value)}
+                                className="input"
+                            >
+                                <option value="">Todos os status</option>
+                                <option value="active">Ativos</option>
+                                <option value="inactive">Inativos</option>
+                            </select>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="card p-4 border-red-500/20 bg-red-500/10">
+                    <div className="text-red-400">{error}</div>
+                </div>
+            )}
+
+            {/* Users Table */}
+            <div className="card p-6">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="text-white/70">
                             <tr>
-                                <th className="py-2 pr-4">Nome</th>
-                                <th className="py-2 pr-4">E-mail</th>
-                                <th className="py-2 pr-4">Perfil</th>
-                                <th className="py-2 pr-4">Status</th>
-                                <th className="py-2 pr-4 w-40">Ações</th>
+                                <th className="py-3 pr-4 font-medium">Usuário</th>
+                                <th className="py-3 pr-4 font-medium">Email</th>
+                                <th className="py-3 pr-4 font-medium">Telefone</th>
+                                <th className="py-3 pr-4 font-medium">Status</th>
+                                <th className="py-3 pr-4 font-medium">Criado em</th>
+                                <th className="py-3 pr-0 font-medium">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.map(u => (
-                                <tr key={u.id} className="border-t border-white/5">
-                                    <td className="py-3 pr-4">{u.name}</td>
-                                    <td className="py-3 pr-4">{u.email}</td>
-                                    <td className="py-3 pr-4">
-                                        <button
-                                            type="button"
-                                            className="text-blue-300 hover:text-blue-200 underline underline-offset-4"
-                                            onClick={() => {
-                                                const p = profiles.find(p => p.id === u.profileId)
-                                                if (p) openAccessModal(p)
-                                            }}
-                                            title="Ver/editar níveis de acesso"
-                                        >
-                                            {profileName(u.profileId)}
-                                        </button>
-                                    </td>
-                                    <td className="py-3 pr-4">{u.active ? "Ativo" : "Inativo"}</td>
-                                    <td className="py-3 pr-0 flex gap-2">
-                                        <button className="btn" onClick={() => openEditUser(u)}>
-                                            <PencilIcon className="w-4 h-4 mr-1" /> Editar
-                                        </button>
-                                        <button className="btn" onClick={() => toggleUser(u.id, !u.active)}>
-                                            {u.active ? "Desativar" : "Ativar"}
-                                        </button>
-                                    </td>
-                                </tr>
+                            {users.map((user) => (
+                                user && user.id && (
+                                    <UserRow
+                                        key={user.id}
+                                        user={user}
+                                        onEdit={handleEditUser}
+                                        onToggleStatus={handleToggleStatus}
+                                        onDelete={handleDeleteUser}
+                                    />
+                                )
                             ))}
-                            {!filtered.length && (
+                            {!users.length && !loading && (
                                 <tr>
-                                    <td colSpan={5} className="py-6 text-white/50">Nenhum usuário encontrado.</td>
+                                    <td colSpan={6} className="py-12 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
+                                                <Users className="text-white/40" size={32} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-medium text-white mb-2">Nenhum usuário encontrado</h3>
+                                                <p className="text-white/60">Tente ajustar os filtros ou criar um novo usuário.</p>
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                             )}
                         </tbody>
@@ -271,69 +766,48 @@ export default function UsersPage() {
                 </div>
             </div>
 
-            {/* ===== Modais (componentizados) ===== */}
+            {/* Pagination */}
+            {safePagination.totalPages > 1 && (
+                <div className="flex items-center justify-center">
+                    <div className="card px-6 py-4">
+                        <div className="text-sm text-white/60">
+                            Mostrando {((safePagination.page - 1) * safePagination.limit) + 1} a {Math.min(safePagination.page * safePagination.limit, safePagination.total)} de {safePagination.total} usuários
+                        </div>
+                    </div>
+                </div>
+            )}
 
-            {/* Perfil: Novo */}
-            <ProfileFormModal
-                open={openProfile}
-                onClose={() => setOpenProfile(false)}
-                title="Novo perfil"
-                onSubmit={handleSubmitProfile(onCreateProfile)}
-                register={registerProfile}
-                errors={profileErrors}
-                saving={savingProfile}
-                /* 👇 NOVO: lista dentro da modal */
-                profiles={profiles}
-                onEdit={onOpenEditProfile}
-                formId="new-profile-form"
-            />
-
-
-            {/* Perfil: Editar */}
-            <ProfileFormModal
-                open={openEditProfile && !!editingProfile}
-                onClose={() => setOpenEditProfile(false)}
-                title="Editar perfil"
-                onSubmit={handleSubmitProfileEdit(onUpdateProfile)}
-                register={registerProfileEdit}
-                errors={profileEditErrors}
-                saving={savingProfileEdit}
-            />
-
-            {/* Usuário: Novo */}
+            {/* Modais */}
+            
+            {/* Modal de Criação */}
             <UserFormModal
-                open={openUser}
-                onClose={() => setOpenUser(false)}
-                title="Novo usuário"
-                onSubmit={handleSubmitUser(onCreateUser)}
-                register={registerUser}
-                errors={userErrors}
-                saving={savingUser}
-                profiles={profiles}
+                open={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                user={null}
+                isEdit={false}
+                onCreateUser={handleCreateUserSubmit}
+                onUpdateUser={handleUpdateUserSubmit}
             />
 
-            {/* Usuário: Editar */}
+            {/* Modal de Edição */}
             <UserFormModal
-                open={openUserEdit && !!editingUser}
-                onClose={() => setOpenUserEdit(false)}
-                title="Editar usuário"
-                onSubmit={handleSubmitUserEdit(onUpdateUser)}
-                register={registerUserEdit}
-                errors={userEditErrors}
-                saving={savingUserEdit}
-                profiles={profiles}
-                isEdit
+                open={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                user={selectedUser}
+                isEdit={true}
+                onCreateUser={handleCreateUserSubmit}
+                onUpdateUser={handleUpdateUserSubmit}
             />
 
-            {/* Níveis de Acesso */}
-            <AccessModal
-                open={openAccess}
-                onClose={() => setOpenAccess(false)}
-                profile={editingAccessProfile}
-                draft={accessDraft}
-                modules={ALL_MODULES}
-                onToggle={togglePermission}
-                onSave={saveAccess}
+            {/* Modal de Confirmação de Exclusão */}
+            <DeleteConfirmationModal
+                open={showDeleteModal}
+                onClose={() => {
+                    setShowDeleteModal(false)
+                    setUserToDelete(null)
+                }}
+                onConfirm={handleConfirmDelete}
+                userName={userToDelete?.name || 'Usuário'}
             />
         </div>
     )
