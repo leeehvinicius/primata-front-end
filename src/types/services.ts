@@ -106,62 +106,62 @@ export interface UpdateServiceData {
   isActive?: boolean
 }
 
-// Configuração das categorias para exibição
+// Configuração das categorias para exibição - LIGHT MODE
 export const categoryConfig = {
   [ServiceCategory.FACIAL_TREATMENT]: {
     name: 'Tratamentos Faciais',
     icon: '👩‍⚕️',
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/20'
+    color: 'text-blue-600',
+    bg: 'bg-blue-100',
+    border: 'border-blue-200'
   },
   [ServiceCategory.BODY_TREATMENT]: {
     name: 'Tratamentos Corporais',
     icon: '💪',
-    color: 'text-green-400',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/20'
+    color: 'text-green-600',
+    bg: 'bg-green-100',
+    border: 'border-green-200'
   },
   [ServiceCategory.HAIR_REMOVAL]: {
     name: 'Depilação',
     icon: '✨',
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10',
-    border: 'border-purple-500/20'
+    color: 'text-purple-600',
+    bg: 'bg-purple-100',
+    border: 'border-purple-200'
   },
   [ServiceCategory.SKIN_CLEANING]: {
     name: 'Limpeza de Pele',
     icon: '🧴',
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/20'
+    color: 'text-amber-600',
+    bg: 'bg-amber-100',
+    border: 'border-amber-200'
   },
   [ServiceCategory.AESTHETIC_PROCEDURE]: {
     name: 'Procedimentos Estéticos',
     icon: '💉',
-    color: 'text-red-400',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/20'
+    color: 'text-red-600',
+    bg: 'bg-red-100',
+    border: 'border-red-200'
   },
   [ServiceCategory.CONSULTATION]: {
     name: 'Consultas',
     icon: '📋',
-    color: 'text-indigo-400',
-    bg: 'bg-indigo-500/10',
-    border: 'border-indigo-500/20'
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-100',
+    border: 'border-indigo-200'
   },
   [ServiceCategory.MAINTENANCE]: {
     name: 'Manutenção',
     icon: '🔧',
-    color: 'text-gray-400',
-    bg: 'bg-gray-500/10',
-    border: 'border-gray-500/20'
+    color: 'text-gray-600',
+    bg: 'bg-gray-100',
+    border: 'border-gray-200'
   },
   [ServiceCategory.OTHER]: {
     name: 'Outros',
     icon: '📦',
-    color: 'text-slate-400',
-    bg: 'bg-slate-500/10',
-    border: 'border-slate-500/20'
+    color: 'text-slate-600',
+    bg: 'bg-slate-100',
+    border: 'border-slate-200'
   }
 }

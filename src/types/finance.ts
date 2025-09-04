@@ -86,23 +86,23 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
   OVERDUE: 'Vencido'
 };
 
-// Cores para UI
+// Cores para UI - LIGHT MODE
 export const PAYMENT_METHOD_COLORS: Record<PaymentMethod, { bg: string; text: string; ring: string }> = {
-  CASH: { bg: 'bg-lime-600/15', text: 'text-lime-300', ring: 'ring-lime-500/30' },
-  CREDIT_CARD: { bg: 'bg-fuchsia-600/15', text: 'text-fuchsia-300', ring: 'ring-fuchsia-500/30' },
-  DEBIT_CARD: { bg: 'bg-sky-600/15', text: 'text-sky-300', ring: 'ring-sky-500/30' },
-  PIX: { bg: 'bg-teal-600/15', text: 'text-teal-300', ring: 'ring-teal-500/30' },
-  BANK_TRANSFER: { bg: 'bg-indigo-600/15', text: 'text-indigo-300', ring: 'ring-indigo-500/30' },
-  CHECK: { bg: 'bg-orange-600/15', text: 'text-orange-300', ring: 'ring-orange-500/30' },
-  VOUCHER: { bg: 'bg-violet-600/15', text: 'text-violet-300', ring: 'ring-violet-500/30' },
-  OTHER: { bg: 'bg-slate-600/15', text: 'text-slate-300', ring: 'ring-slate-500/30' }
+  CASH: { bg: 'bg-lime-100', text: 'text-lime-700', ring: 'ring-lime-500/30' },
+  CREDIT_CARD: { bg: 'bg-fuchsia-100', text: 'text-fuchsia-700', ring: 'ring-fuchsia-500/30' },
+  DEBIT_CARD: { bg: 'bg-sky-100', text: 'text-sky-700', ring: 'ring-sky-500/30' },
+  PIX: { bg: 'bg-teal-100', text: 'text-teal-700', ring: 'ring-teal-500/30' },
+  BANK_TRANSFER: { bg: 'bg-indigo-100', text: 'text-indigo-700', ring: 'ring-indigo-500/30' },
+  CHECK: { bg: 'bg-orange-100', text: 'text-orange-700', ring: 'ring-orange-500/30' },
+  VOUCHER: { bg: 'bg-violet-100', text: 'text-violet-700', ring: 'ring-violet-500/30' },
+  OTHER: { bg: 'bg-slate-100', text: 'text-slate-700', ring: 'ring-slate-500/30' }
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, { bg: string; text: string; ring: string }> = {
-  PENDING: { bg: 'bg-yellow-600/15', text: 'text-yellow-300', ring: 'ring-yellow-500/30' },
-  PAID: { bg: 'bg-green-600/15', text: 'text-green-300', ring: 'ring-green-500/30' },
-  PARTIAL: { bg: 'bg-blue-600/15', text: 'text-blue-300', ring: 'ring-blue-500/30' },
-  CANCELLED: { bg: 'bg-red-600/15', text: 'text-red-300', ring: 'ring-red-500/30' },
-  REFUNDED: { bg: 'bg-purple-600/15', text: 'text-purple-300', ring: 'ring-purple-500/30' },
-  OVERDUE: { bg: 'bg-orange-600/15', text: 'text-orange-300', ring: 'ring-orange-500/30' }
+  PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-700', ring: 'ring-yellow-500/30' },
+  PAID: { bg: 'bg-green-100', text: 'text-green-700', ring: 'ring-green-500/30' },
+  PARTIAL: { bg: 'bg-blue-100', text: 'text-blue-700', ring: 'ring-blue-500/30' },
+  CANCELLED: { bg: 'bg-red-100', text: 'text-red-700', ring: 'ring-red-500/30' },
+  REFUNDED: { bg: 'bg-purple-100', text: 'text-purple-700', ring: 'ring-purple-500/30' },
+  OVERDUE: { bg: 'bg-orange-100', text: 'text-orange-700', ring: 'ring-orange-500/30' }
 };

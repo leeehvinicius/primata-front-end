@@ -13,11 +13,11 @@ export interface AuthResponse {
 export interface UserProfile {
   id: string;
   email: string;
+  name: string;
   profile: {
     id: string;
-    name: string;
     role: string;
-    isActive: boolean;
+    isActive?: boolean;
   };
 }
 

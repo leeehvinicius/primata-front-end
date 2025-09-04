@@ -37,7 +37,7 @@ export default function ProfileFormModal({
             title={title}
             footer={
                 <>
-                    <button className="btn" onClick={onClose}>Cancelar</button>
+                    <button className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300" onClick={onClose}>Cancelar</button>
                     <button className="btn btn-primary" form={formId} type="submit" disabled={!!saving}>
                         {saving ? "Salvando…" : "Salvar"}
                     </button>
@@ -47,23 +47,23 @@ export default function ProfileFormModal({
             {/* Formulário */}
             <form id={formId} className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={onSubmit}>
                 <div className="md:col-span-2">
-                    <label className="text-sm text-white/70">Nome do perfil*</label>
+                    <label className="text-sm text-gray-700">Nome do perfil*</label>
                     <input className="input mt-1" {...register("name")} />
-                    {errors?.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
+                    {errors?.name && <p className="text-red-600 text-sm mt-1">{errors.name.message}</p>}
                 </div>
                 <div className="md:col-span-2">
-                    <label className="text-sm text-white/70">Descrição</label>
+                    <label className="text-sm text-gray-700">Descrição</label>
                     <textarea className="input mt-1 h-24" {...register("description")} />
                 </div>
             </form>
 
             {/* Lista dentro da modal (opcional) */}
             {profiles && (
-                <div className="border-t border-white/10 pt-4 mt-4">
-                    <h4 className="font-medium mb-3">Perfis cadastrados</h4>
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                    <h4 className="font-medium mb-3 text-gray-900">Perfis cadastrados</h4>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="text-white/70">
+                            <thead className="text-gray-600">
                                 <tr>
                                     <th className="py-2 pr-4">Nome</th>
                                     <th className="py-2 pr-4">Descrição</th>
@@ -72,12 +72,12 @@ export default function ProfileFormModal({
                             </thead>
                             <tbody>
                                 {profiles.map(p => (
-                                    <tr key={p.id} className="border-t border-white/5">
-                                        <td className="py-3 pr-4">{p.name}</td>
-                                        <td className="py-3 pr-4">{p.description || "—"}</td>
+                                    <tr key={p.id} className="border-t border-gray-100">
+                                        <td className="py-3 pr-4 text-gray-900">{p.name}</td>
+                                        <td className="py-3 pr-4 text-gray-700">{p.description || "—"}</td>
                                         <td className="py-3 pr-0">
                                             <button
-                                                className="btn"
+                                                className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
                                                 type="button"
                                                 onClick={() => onEdit?.(p)}
                                                 title="Editar perfil"
@@ -88,7 +88,7 @@ export default function ProfileFormModal({
                                     </tr>
                                 ))}
                                 {!profiles.length && (
-                                    <tr><td colSpan={3} className="py-6 text-white/50">Nenhum perfil cadastrado.</td></tr>
+                                    <tr><td colSpan={3} className="py-6 text-gray-500">Nenhum perfil cadastrado.</td></tr>
                                 )}
                             </tbody>
                         </table>

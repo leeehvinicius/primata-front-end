@@ -2,25 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
-/* extras pra manter padrão do projeto */
+/* extras pra manter padrão do projeto - LIGHT MODE */
 @layer components {
   .card {
-    @apply bg-[#0d1726] rounded-2xl shadow-lg border border-white/10;
+    @apply bg-white rounded-2xl shadow-lg border border-gray-200;
   }
 
   .btn {
-    @apply px-4 py-2 rounded-xl font-semibold transition;
+    @apply px-4 py-2 rounded-xl font-semibold transition-all duration-200;
   }
 
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white;
+    @apply bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105;
+  }
+
+  .btn-secondary {
+    @apply bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105;
+  }
+
+  .btn-success {
+    @apply bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105;
+  }
+
+  .btn-outline {
+    @apply bg-white border-2 border-green-500 text-green-600 hover:bg-green-50 hover:border-green-600 shadow-md hover:shadow-lg transform hover:scale-105;
   }
 
   .input {
-    @apply w-full px-3 py-2 rounded-xl bg-[#0b1220] border border-white/10 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500;
+    @apply w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200;
   }
 
   .link {
-    @apply text-blue-400 hover:underline;
+    @apply text-green-600 hover:text-green-700 hover:underline transition-colors duration-200;
   }
+
+  /* Animações personalizadas */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.5s ease-out;
+  }
+
+  /* Gradientes personalizados */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-green-500 to-emerald-600;
+  }
+
+  .gradient-secondary {
+    @apply bg-gradient-to-r from-blue-500 to-indigo-600;
+  }
+
+  .gradient-success {
+    @apply bg-gradient-to-r from-green-500 to-emerald-600;
+  }
+
+  .gradient-danger {
+    @apply bg-gradient-to-r from-red-500 to-pink-600;
+  }
+
+  .gradient-warning {
+    @apply bg-gradient-to-r from-yellow-500 to-orange-600;
+  }
+
+  /* Sombras personalizadas */
+  .shadow-soft {
+    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-medium {
+    box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-strong {
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Layout fixo */
+  .layout-fixed {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar-fixed {
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
+  .content-scrollable {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* Animações CSS */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Scrollbar para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Seleção de texto personalizada */
+::selection {
+  background: #10b981;
+  color: white;
+}
+
+::-moz-selection {
+  background: #10b981;
+  color: white;
+}
+
+/* Reset para o body e html */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Garantir que o layout principal ocupe toda a altura */
+#__next {
+  height: 100vh;
+  overflow: hidden;
 }

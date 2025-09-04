@@ -57,30 +57,30 @@ const roleConfig = {
     'ADMINISTRADOR': {
         icon: Crown,
         name: 'Administrador',
-        color: 'text-purple-400',
-        bg: 'bg-purple-500/10',
-        border: 'border-purple-500/20'
+        color: 'text-purple-600',
+        bg: 'bg-purple-100',
+        border: 'border-purple-200'
     },
     'MEDICO': {
         icon: Stethoscope,
         name: 'Médico',
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10',
-        border: 'border-blue-500/20'
+        color: 'text-blue-600',
+        bg: 'bg-blue-100',
+        border: 'border-blue-200'
     },
     'RECEPCIONISTA': {
         icon: Headphones,
         name: 'Recepcionista',
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/10',
-        border: 'border-emerald-500/20'
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-100',
+        border: 'border-emerald-200'
     },
     'SERVICOS_GERAIS': {
         icon: Wrench,
         name: 'Serviços Gerais',
-        color: 'text-amber-400',
-        bg: 'bg-amber-500/10',
-        border: 'border-amber-500/20'
+        color: 'text-amber-600',
+        bg: 'bg-amber-100',
+        border: 'border-amber-200'
     }
 }
 
@@ -99,13 +99,13 @@ function StatCard({ title, value, icon: Icon, color, trend }: {
                     <Icon className="w-6 h-6" />
                 </div>
                 {trend && (
-                    <div className={`text-sm ${trend.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`text-sm ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
                         {trend.isPositive ? '+' : ''}{trend.value}%
                     </div>
                 )}
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{value}</div>
-            <div className="text-white/60 text-sm">{title}</div>
+            <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+            <div className="text-gray-600 text-sm">{title}</div>
         </div>
     )
 }
@@ -121,51 +121,51 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
     const Icon = config.icon
 
     return (
-        <tr className="border-t border-white/5 hover:bg-white/5 transition-colors">
+        <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
             <td className="py-4 pr-4">
                 <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${config.bg} ${config.border} border`}>
                         <Icon className={`w-4 h-4 ${config.color}`} />
                     </div>
                     <div>
-                        <div className="font-medium text-white">{user.name || 'Nome não informado'}</div>
+                        <div className="font-medium text-gray-900">{user.name || 'Nome não informado'}</div>
                         <div className={`text-sm ${config.color}`}>{config.name}</div>
                     </div>
                 </div>
             </td>
             <td className="py-4 pr-4">
-                <div className="flex items-center gap-2 text-white/70">
+                <div className="flex items-center gap-2 text-gray-600">
                     <Mail className="w-4 h-4" />
                     <span className="truncate max-w-[200px]">{user.email || 'Email não informado'}</span>
                 </div>
             </td>
             <td className="py-4 pr-4">
                 {(user as any).profile?.phone ? (
-                    <div className="flex items-center gap-2 text-white/70">
+                    <div className="flex items-center gap-2 text-gray-600">
                         <Phone className="w-4 h-4" />
                         <span>{(user as any).profile.phone}</span>
                     </div>
                 ) : (
-                    <span className="text-white/50">-</span>
+                    <span className="text-gray-400">-</span>
                 )}
             </td>
             <td className="py-4 pr-4">
                 <div className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
                     (user as any).profile?.isActive === true
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                        ? 'bg-green-100 text-green-700 border border-green-200' 
+                        : 'bg-red-100 text-red-700 border border-red-200'
                 }`}>
                     {(user as any).profile?.isActive === true ? 'Ativo' : 'Inativo'}
                 </div>
             </td>
-            <td className="py-4 pr-4 text-white/50 text-sm">
+            <td className="py-4 pr-4 text-gray-500 text-sm">
                 {user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
             </td>
             <td className="py-4 pr-0">
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => onEdit(user)}
-                        className="p-2 text-white/50 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                         title="Editar usuário"
                     >
                         <Edit size={16} />
@@ -174,8 +174,8 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
                         onClick={() => onToggleStatus(user.id)}
                         className={`p-2 rounded-lg transition-colors ${
                             (user as any).profile?.isActive === true
-                                ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' 
-                                : 'text-white/50 hover:text-green-400 hover:bg-green-500/10'
+                                ? 'text-gray-400 hover:text-red-600 hover:bg-red-100' 
+                                : 'text-gray-400 hover:text-green-600 hover:bg-green-100'
                         }`}
                         title={(user as any).profile?.isActive === true ? 'Desativar usuário' : 'Ativar usuário'}
                     >
@@ -183,7 +183,7 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
                     </button>
                     <button
                         onClick={() => onDelete(user.id)}
-                        className="p-2 text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                         title="Excluir usuário"
                     >
                         <Trash2 size={16} />
@@ -302,7 +302,7 @@ function UserFormModal({
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Nome*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Nome*</label>
                         <input 
                             className="input" 
                             {...register("name")}
@@ -314,7 +314,7 @@ function UserFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Email*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Email*</label>
                         <input 
                             className="input" 
                             type="email"
@@ -327,7 +327,7 @@ function UserFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Telefone</label>
+                        <label className="block text-sm text-gray-700 mb-2">Telefone</label>
                         <input 
                             className="input" 
                             {...register("phone")}
@@ -336,7 +336,7 @@ function UserFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Perfil*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Perfil*</label>
                         <select className="input" {...register("role")}>
                             <option value="">Selecione um perfil</option>
                             {roles.map((role) => (
@@ -352,7 +352,7 @@ function UserFormModal({
 
                     {!isEdit && (
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Senha*</label>
+                            <label className="block text-sm text-gray-700 mb-2">Senha*</label>
                             <input 
                                 className="input" 
                                 type="password"
@@ -372,13 +372,13 @@ function UserFormModal({
                         className="accent-blue-500"
                         {...register("isActive")}
                     />
-                    <label className="text-sm text-white/70">Usuário ativo</label>
+                    <label className="text-sm text-gray-700">Usuário ativo</label>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button 
                         type="button" 
-                        className="btn" 
+                        className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300" 
                         onClick={onClose}
                     >
                         Cancelar
@@ -417,18 +417,18 @@ function DeleteConfirmationModal({
             className="max-w-md"
         >
             <div className="flex items-start gap-4">
-                <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20">
-                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                <div className="p-3 rounded-full bg-red-100 border border-red-200">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="text-white font-medium mb-2">Excluir usuário</h4>
-                    <p className="text-white/70 text-sm mb-4">
+                    <h4 className="text-gray-900 font-medium mb-2">Excluir usuário</h4>
+                    <p className="text-gray-600 text-sm mb-4">
                         Tem certeza que deseja excluir o usuário <strong>{userName}</strong>? 
                         Esta ação não pode ser desfeita.
                     </p>
                     <div className="flex gap-3">
                         <button 
-                            className="btn flex-1" 
+                            className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 flex-1" 
                             onClick={onClose}
                         >
                             Cancelar
@@ -612,8 +612,8 @@ export default function UsersPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold text-white">Usuários</h1>
-                    <p className="text-white/60 mt-1">Gerencie todos os usuários do sistema</p>
+                    <h1 className="text-2xl font-semibold text-gray-900">Usuários</h1>
+                    <p className="text-gray-600 mt-1">Gerencie todos os usuários do sistema</p>
                 </div>
                 <button 
                     className="btn btn-primary flex items-center gap-2"
@@ -631,21 +631,21 @@ export default function UsersPage() {
                         title="Total de Usuários"
                         value={stats.totalUsers}
                         icon={Users}
-                        color="bg-blue-500/10 text-blue-400"
+                        color="bg-blue-100 text-blue-600"
                         trend={{ value: 12, isPositive: true }}
                     />
                     <StatCard
                         title="Usuários Ativos"
                         value={stats.activeUsers}
                         icon={UserCheck}
-                        color="bg-green-500/10 text-green-400"
+                        color="bg-green-100 text-green-600"
                         trend={{ value: 8, isPositive: true }}
                     />
                     <StatCard
                         title="Usuários Inativos"
                         value={stats.inactiveUsers}
                         icon={UserX}
-                        color="bg-red-500/10 text-red-400"
+                        color="bg-red-100 text-red-600"
                         trend={{ value: -3, isPositive: false }}
                     />
                 </div>
@@ -655,7 +655,7 @@ export default function UsersPage() {
             <div className="card p-6">
                 <div className="flex flex-col lg:flex-row gap-4 mb-6">
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                         <input
                             type="text"
                             placeholder="Buscar usuários por nome, email..."
@@ -670,7 +670,7 @@ export default function UsersPage() {
                         className={`btn flex items-center gap-2 ${
                             showFilters 
                                 ? 'btn-primary' 
-                                : 'bg-[#0b1220] text-white/70 hover:bg-white/5'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                         <Filter size={20} />
@@ -680,9 +680,9 @@ export default function UsersPage() {
 
                 {/* Filter Panel */}
                 {showFilters && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-white/10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-100">
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Role</label>
+                            <label className="block text-sm text-gray-700 mb-2">Role</label>
                             <select
                                 value={selectedRole}
                                 onChange={(e) => handleRoleFilter(e.target.value)}
@@ -698,7 +698,7 @@ export default function UsersPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Status</label>
+                            <label className="block text-sm text-gray-700 mb-2">Status</label>
                             <select
                                 value={selectedStatus}
                                 onChange={(e) => handleStatusFilter(e.target.value)}
@@ -724,7 +724,7 @@ export default function UsersPage() {
             <div className="card p-6">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="text-white/70">
+                        <thead className="text-gray-700">
                             <tr>
                                 <th className="py-3 pr-4 font-medium">Usuário</th>
                                 <th className="py-3 pr-4 font-medium">Email</th>
@@ -750,12 +750,12 @@ export default function UsersPage() {
                                 <tr>
                                     <td colSpan={6} className="py-12 text-center">
                                         <div className="flex flex-col items-center gap-4">
-                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
-                                                <Users className="text-white/40" size={32} />
+                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <Users className="text-gray-400" size={32} />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-medium text-white mb-2">Nenhum usuário encontrado</h3>
-                                                <p className="text-white/60">Tente ajustar os filtros ou criar um novo usuário.</p>
+                                                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum usuário encontrado</h3>
+                                                <p className="text-gray-600">Tente ajustar os filtros ou criar um novo usuário.</p>
                                             </div>
                                         </div>
                                     </td>
@@ -770,7 +770,7 @@ export default function UsersPage() {
             {safePagination.totalPages > 1 && (
                 <div className="flex items-center justify-center">
                     <div className="card px-6 py-4">
-                        <div className="text-sm text-white/60">
+                        <div className="text-sm text-gray-600">
                             Mostrando {((safePagination.page - 1) * safePagination.limit) + 1} a {Math.min(safePagination.page * safePagination.limit, safePagination.total)} de {safePagination.total} usuários
                         </div>
                     </div>

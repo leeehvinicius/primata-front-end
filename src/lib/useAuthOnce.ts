@@ -7,18 +7,14 @@ export function useAuthOnce() {
     const auth = useAuth()
     const [hasInitialized, setHasInitialized] = useState(false)
 
+    // Inicializa apenas uma vez quando o componente monta
     useEffect(() => {
         if (!hasInitialized) {
             setHasInitialized(true)
-        }
-    }, [hasInitialized])
-
-    // Só executa restore se ainda não foi inicializado
-    useEffect(() => {
-        if (hasInitialized && !auth.user && !auth.isLoading) {
+            // Executa restore imediatamente na inicialização
             auth.restore()
         }
-    }, [hasInitialized, auth.user, auth.isLoading, auth.restore])
+    }, [hasInitialized, auth.restore])
 
     return {
         ...auth,

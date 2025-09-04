@@ -77,14 +77,14 @@ function StatCard({ title, value, icon: Icon, color, trend, subtitle }: {
                     <Icon className="w-6 h-6" />
                 </div>
                 {trend && (
-                    <div className={`text-sm ${trend.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`text-sm ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
                         {trend.isPositive ? '+' : ''}{trend.value}%
                     </div>
                 )}
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{value}</div>
-            <div className="text-white/60 text-sm">{title}</div>
-            {subtitle && <div className="text-white/40 text-xs mt-1">{subtitle}</div>}
+            <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+            <div className="text-gray-600 text-sm">{title}</div>
+            {subtitle && <div className="text-gray-500 text-xs mt-1">{subtitle}</div>}
         </div>
     )
 }
@@ -113,26 +113,26 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
     }
 
     return (
-        <tr className="border-t border-white/5 hover:bg-white/5 transition-colors">
+        <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
             <td className="py-4 pr-4">
                 <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${config.bg} ${config.border} border`}>
                         <span className="text-lg">{config.icon}</span>
                     </div>
                     <div>
-                        <div className="font-medium text-white">{service.name}</div>
+                        <div className="font-medium text-gray-900">{service.name}</div>
                         <div className={`text-sm ${config.color}`}>{config.name}</div>
                     </div>
                 </div>
             </td>
             <td className="py-4 pr-4">
-                <div className="flex items-center gap-2 text-white/70">
+                <div className="flex items-center gap-2 text-gray-600">
                     <Clock className="w-4 h-4" />
                     <span>{formatDuration(service.duration)}</span>
                 </div>
             </td>
             <td className="py-4 pr-4">
-                <div className="flex items-center gap-2 text-white/70">
+                <div className="flex items-center gap-2 text-gray-600">
                     <DollarSign className="w-4 h-4" />
                     <span className="font-medium">{formatPrice(service.currentPrice)}</span>
                 </div>
@@ -141,8 +141,8 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
             <td className="py-4 pr-4">
                 <div className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
                     service.isActive
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                        ? 'bg-green-100 text-green-700 border border-green-200' 
+                        : 'bg-red-100 text-red-700 border border-red-200'
                 }`}>
                     {service.isActive ? 'Ativo' : 'Inativo'}
                 </div>
@@ -151,7 +151,7 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => onEdit(service)}
-                        className="p-2 text-white/50 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                         title="Editar serviço"
                     >
                         <Edit size={16} />
@@ -160,8 +160,8 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
                         onClick={() => onToggleStatus(service.id)}
                         className={`p-2 rounded-lg transition-colors ${
                             service.isActive
-                                ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' 
-                                : 'text-white/50 hover:text-green-400 hover:bg-green-500/10'
+                                ? 'text-gray-400 hover:text-red-600 hover:bg-red-100' 
+                                : 'text-gray-400 hover:text-green-600 hover:bg-green-100'
                         }`}
                         title={service.isActive ? 'Desativar serviço' : 'Ativar serviço'}
                     >
@@ -169,7 +169,7 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
                     </button>
                     <button
                         onClick={() => onDelete(service.id)}
-                        className="p-2 text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                         title="Excluir serviço"
                     >
                         <Trash2 size={16} />
@@ -295,7 +295,7 @@ function ServiceFormModal({
                 {/* Informações Básicas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Nome*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Nome*</label>
                         <input 
                             className="input" 
                             {...register("name")}
@@ -307,7 +307,7 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Categoria*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Categoria*</label>
                         <select className="input" {...register("category")}>
                             {categories.map((category) => (
                                 <option key={category.value} value={category.value}>
@@ -322,7 +322,7 @@ function ServiceFormModal({
                 </div>
 
                 <div>
-                    <label className="block text-sm text-white/70 mb-2">Descrição</label>
+                    <label className="block text-sm text-gray-700 mb-2">Descrição</label>
                     <textarea 
                         className="input min-h-[80px]" 
                         {...register("description")}
@@ -333,7 +333,7 @@ function ServiceFormModal({
                 {/* Duração e Preços */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Duração (minutos)*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Duração (minutos)*</label>
                         <input 
                             className="input" 
                             type="number"
@@ -346,7 +346,7 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Preço Base (R$)*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Preço Base (R$)*</label>
                         <input 
                             className="input" 
                             type="number"
@@ -360,7 +360,7 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Preço Atual (R$)*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Preço Atual (R$)*</label>
                         <input 
                             className="input" 
                             type="number"
@@ -377,7 +377,7 @@ function ServiceFormModal({
                 {/* Configurações Operacionais */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Tempo de Preparação (min)</label>
+                        <label className="block text-sm text-gray-700 mb-2">Tempo de Preparação (min)</label>
                         <input 
                             className="input" 
                             type="number"
@@ -390,7 +390,7 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Tempo de Recuperação (min)</label>
+                        <label className="block text-sm text-gray-700 mb-2">Tempo de Recuperação (min)</label>
                         <input 
                             className="input" 
                             type="number"
@@ -403,7 +403,7 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Máx. Clientes Simultâneos*</label>
+                        <label className="block text-sm text-gray-700 mb-2">Máx. Clientes Simultâneos*</label>
                         <input 
                             className="input" 
                             type="number"
@@ -419,7 +419,7 @@ function ServiceFormModal({
                 {/* Informações Adicionais */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Contraindicações</label>
+                        <label className="block text-sm text-gray-700 mb-2">Contraindicações</label>
                         <textarea 
                             className="input min-h-[80px]" 
                             {...register("contraindications")}
@@ -428,7 +428,7 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-white/70 mb-2">Benefícios</label>
+                        <label className="block text-sm text-gray-700 mb-2">Benefícios</label>
                         <textarea 
                             className="input min-h-[80px]" 
                             {...register("benefits")}
@@ -438,7 +438,7 @@ function ServiceFormModal({
                 </div>
 
                 <div>
-                    <label className="block text-sm text-white/70 mb-2">Observações</label>
+                    <label className="block text-sm text-gray-700 mb-2">Observações</label>
                     <textarea 
                         className="input min-h-[80px]" 
                         {...register("notes")}
@@ -454,7 +454,7 @@ function ServiceFormModal({
                             className="accent-blue-500"
                             {...register("requiresProfessional")}
                         />
-                        <span className="text-sm text-white/70">Requer profissional</span>
+                        <span className="text-sm text-gray-700">Requer profissional</span>
                     </label>
 
                     <label className="flex items-center gap-2">
@@ -463,11 +463,11 @@ function ServiceFormModal({
                             className="accent-blue-500"
                             {...register("isActive")}
                         />
-                        <span className="text-sm text-white/70">Serviço ativo</span>
+                        <span className="text-sm text-gray-700">Serviço ativo</span>
                     </label>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button 
                         type="button" 
                         className="btn" 
@@ -508,18 +508,18 @@ function DeleteConfirmationModal({
             className="max-w-md"
         >
             <div className="flex items-start gap-4">
-                <div className="p-3 rounded-full bg-red-500/10 border border-red-500/20">
-                    <AlertTriangle className="w-6 h-6 text-red-400" />
+                <div className="p-3 rounded-full bg-red-100 border border-red-200">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="text-white font-medium mb-2">Excluir serviço</h4>
-                    <p className="text-white/70 text-sm mb-4">
+                    <h4 className="text-gray-900 font-medium mb-2">Excluir serviço</h4>
+                    <p className="text-gray-600 text-sm mb-4">
                         Tem certeza que deseja excluir o serviço <strong>{serviceName}</strong>? 
                         Esta ação não pode ser desfeita.
                     </p>
                     <div className="flex gap-3">
                         <button 
-                            className="btn flex-1" 
+                            className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 flex-1" 
                             onClick={onClose}
                         >
                             Cancelar
@@ -554,6 +554,16 @@ export default function ServicesPage() {
         updateService,
 
     } = useServices()
+
+    // Debug: Log stats to understand the structure
+    React.useEffect(() => {
+        if (stats) {
+            console.log('Services stats:', stats)
+            console.log('Stats type:', typeof stats)
+            console.log('Average price type:', typeof stats.averagePrice)
+            console.log('Average price value:', stats.averagePrice)
+        }
+    }, [stats])
 
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedCategory, setSelectedCategory] = useState<string>("")
@@ -692,8 +702,8 @@ export default function ServicesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold text-white">Serviços</h1>
-                    <p className="text-white/60 mt-1">Gerencie todos os serviços estéticos</p>
+                    <h1 className="text-2xl font-semibold text-gray-900">Serviços</h1>
+                    <p className="text-gray-600 mt-1">Gerencie todos os serviços estéticos</p>
                 </div>
                 <button 
                     className="btn btn-primary flex items-center gap-2"
@@ -705,31 +715,64 @@ export default function ServicesPage() {
             </div>
 
             {/* Stats Cards */}
-            {stats && (
+            {stats && typeof stats === 'object' ? (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <StatCard
                         title="Total de Serviços"
-                        value={stats.total}
+                        value={Number(stats.total) || 0}
                         icon={Package}
-                        color="bg-blue-500/10 text-blue-400"
+                        color="bg-blue-100 text-blue-600"
                     />
                     <StatCard
                         title="Serviços Ativos"
-                        value={stats.active}
+                        value={Number(stats.active) || 0}
                         icon={CheckCircle}
-                        color="bg-green-500/10 text-green-400"
+                        color="bg-green-100 text-green-600"
                     />
                     <StatCard
                         title="Preço Médio"
-                        value={`R$ ${(stats.averagePrice || 0).toFixed(2)}`}
+                        value={`R$ ${(() => {
+                            const price = Number(stats.averagePrice)
+                            return isNaN(price) ? '0.00' : price.toFixed(2)
+                        })()}`}
                         icon={DollarSign}
-                        color="bg-amber-500/10 text-amber-400"
+                        color="bg-amber-100 text-amber-600"
                     />
                     <StatCard
                         title="Duração Média"
-                        value={`${stats.averageDuration || 0}min`}
+                        value={`${(() => {
+                            const duration = Number(stats.averageDuration)
+                            return isNaN(duration) ? 0 : duration
+                        })()}min`}
                         icon={Clock}
-                        color="bg-purple-500/10 text-purple-400"
+                        color="bg-purple-100 text-purple-600"
+                    />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <StatCard
+                        title="Total de Serviços"
+                        value="0"
+                        icon={Package}
+                        color="bg-gray-100 text-gray-600"
+                    />
+                    <StatCard
+                        title="Serviços Ativos"
+                        value="0"
+                        icon={CheckCircle}
+                        color="bg-gray-100 text-gray-600"
+                    />
+                    <StatCard
+                        title="Preço Médio"
+                        value="R$ 0.00"
+                        icon={DollarSign}
+                        color="bg-gray-100 text-gray-600"
+                    />
+                    <StatCard
+                        title="Duração Média"
+                        value="0min"
+                        icon={Clock}
+                        color="bg-gray-100 text-gray-600"
                     />
                 </div>
             )}
@@ -738,7 +781,7 @@ export default function ServicesPage() {
             <div className="card p-6">
                 <div className="flex flex-col lg:flex-row gap-4 mb-6">
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" size={20} />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                         <input
                             type="text"
                             placeholder="Buscar serviços por nome, descrição..."
@@ -753,7 +796,7 @@ export default function ServicesPage() {
                         className={`btn flex items-center gap-2 ${
                             showFilters 
                                 ? 'btn-primary' 
-                                : 'bg-[#0b1220] text-white/70 hover:bg-white/5'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                     >
                         <Filter size={20} />
@@ -763,9 +806,9 @@ export default function ServicesPage() {
 
                 {/* Filter Panel */}
                 {showFilters && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-white/10">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-gray-100">
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Categoria</label>
+                            <label className="block text-sm text-gray-700 mb-2">Categoria</label>
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => handleCategoryFilter(e.target.value)}
@@ -781,7 +824,7 @@ export default function ServicesPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Status</label>
+                            <label className="block text-sm text-gray-700 mb-2">Status</label>
                             <select
                                 value={selectedStatus}
                                 onChange={(e) => handleStatusFilter(e.target.value)}
@@ -794,7 +837,7 @@ export default function ServicesPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Preço Mínimo (R$)</label>
+                            <label className="block text-sm text-gray-700 mb-2">Preço Mínimo (R$)</label>
                             <input
                                 type="number"
                                 step="0.01"
@@ -806,7 +849,7 @@ export default function ServicesPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm text-white/70 mb-2">Preço Máximo (R$)</label>
+                            <label className="block text-sm text-gray-700 mb-2">Preço Máximo (R$)</label>
                 <div className="flex gap-2">
                     <input
                                     type="number"
@@ -839,7 +882,7 @@ export default function ServicesPage() {
             <div className="card p-6">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="text-white/70">
+                        <thead className="text-gray-700">
                             <tr>
                                 <th className="py-3 pr-4 font-medium">Serviço</th>
                                 <th className="py-3 pr-4 font-medium">Duração</th>
@@ -865,12 +908,12 @@ export default function ServicesPage() {
                                 <tr>
                                     <td colSpan={6} className="py-12 text-center">
                                         <div className="flex flex-col items-center gap-4">
-                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
-                                                <Package className="text-white/40" size={32} />
+                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <Package className="text-gray-400" size={32} />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-medium text-white mb-2">Nenhum serviço encontrado</h3>
-                                                <p className="text-white/60">Tente ajustar os filtros ou criar um novo serviço.</p>
+                                                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum serviço encontrado</h3>
+                                                <p className="text-gray-600">Tente ajustar os filtros ou criar um novo serviço.</p>
                                             </div>
                                         </div>
                                     </td>
@@ -885,7 +928,7 @@ export default function ServicesPage() {
             {safePagination.totalPages > 1 && (
                 <div className="flex items-center justify-center">
                     <div className="card px-6 py-4">
-                        <div className="text-sm text-white/60">
+                        <div className="text-sm text-gray-600">
                             Mostrando {((safePagination.page - 1) * safePagination.limit) + 1} a {Math.min(safePagination.page * safePagination.limit, safePagination.total)} de {safePagination.total} serviços
                             </div>
                                 </div>

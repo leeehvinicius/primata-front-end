@@ -1,119 +1,96 @@
-"use client";
-
-import { useState, FormEvent } from "react";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useAuth } from "@/lib/auth";
+"use client"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuthOnce } from "@/lib/useAuthOnce"
+import { Eye, EyeOff, Lock, Mail } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [showPassword, setShowPassword] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const router = useRouter()
+    const { login } = useAuthOnce()
 
-    const router = useRouter();
-    const params = useSearchParams();
-    const { login, isLoading } = useAuth();
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (isLoading) return
 
-    async function onSubmit(e: FormEvent) {
-        e.preventDefault();
-        
-        if (isLoading) return;
-
+        setIsLoading(true)
         try {
-            const success = await login({ email, password });
-            
+            const success = await login({ email, password })
             if (success) {
-                toast.success("Login realizado com sucesso! 👌");
-                const from = params.get("from") || "/dashboard";
-                router.replace(from);
-            } else {
-                toast.error("Falha na autenticação");
+                router.replace("/dashboard")
             }
         } catch (error) {
-            console.error('Login error:', error);
-            toast.error("Erro ao fazer login. Verifique suas credenciais.");
+            console.error("Login error:", error)
+        } finally {
+            setIsLoading(false)
         }
     }
 
     return (
-        <div className="min-h-screen grid place-items-center bg-gradient-to-br from-[#081225] via-[#091a30] to-[#0b1220]">
-            <div className="card w-full max-w-md p-8">
-                <div className="flex flex-col items-center mb-6 text-center">
-                    <Image
-                        src="/primata-logo.png"
-                        alt="Logo Primata"
-                        width={120}
-                        height={120}
-                        priority
-                        style={{ height: 'auto' }}
-                    />
-                    <h1 className="text-2xl font-bold">Entrar</h1>
-                    <p className="text-white/60">Acesse o sistema da clínica</p>
+        <div className="min-h-screen grid place-items-center bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50">
+            <div className="card w-full max-w-md p-8 animate-fade-in">
+                <div className="flex flex-col items-center mb-8 text-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
+                        <span className="text-white font-bold text-3xl">P</span>
+                    </div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                        Primata Estética
+                    </h1>
+                    <p className="text-gray-600 mt-2">Sistema de Gestão Clínica</p>
                 </div>
 
-                <form className="space-y-4" onSubmit={onSubmit}>
+                <form className="space-y-6" onSubmit={handleSubmit}>
                     <div>
-                        <label className="text-sm text-white/70">E-mail</label>
-                        <input
-                            className="input mt-1 w-full"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            placeholder="admin@primata.com"
-                            disabled={isLoading}
-                        />
+                        <label className="text-sm text-gray-700 font-medium mb-2 block">E-mail</label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <input
+                                className="input pl-10"
+                                type="email"
+                                placeholder="seu@email.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div>
-                        <label className="text-sm text-white/70">Senha</label>
-                        <div className="relative mt-1">
+                        <label className="text-sm text-gray-700 font-medium mb-2 block">Senha</label>
+                        <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                             <input
-                                className="input w-full pr-10"
+                                className="input pl-10 pr-12"
                                 type={showPassword ? "text" : "password"}
+                                placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                placeholder="admin123"
-                                disabled={isLoading}
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute inset-y-0 right-3 flex items-center text-white/70 hover:text-white disabled:opacity-50"
+                                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors duration-200"
                                 disabled={isLoading}
                             >
-                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                             </button>
                         </div>
                     </div>
 
-                    <button 
-                        className="btn btn-primary w-full h-11" 
-                        disabled={isLoading}
+                    <button
                         type="submit"
+                        disabled={isLoading}
+                        className="btn btn-primary w-full py-3 text-lg font-semibold"
                     >
-                        {isLoading ? "Entrando..." : "Entrar"}
+                        {isLoading ? "Entrando..." : "Entrar no Sistema"}
                     </button>
                 </form>
-
-                <div className="mt-4 text-right">
-                    <a className="link text-sm" href="#">
-                        Esqueci minha senha
-                    </a>
-                </div>
-
-                {/* Informações de teste */}
-                <div className="mt-6 p-4 bg-blue-900/20 border border-blue-600/30 rounded-lg">
-                    <h3 className="text-sm font-medium text-blue-300 mb-2">Credenciais de Teste:</h3>
-                    <div className="text-xs text-blue-200 space-y-1">
-                        <div><strong>E-mail:</strong> admin@primata.com</div>
-                        <div><strong>Senha:</strong> admin123</div>
-                    </div>
-                </div>
             </div>
         </div>
-    );
+    )
 }

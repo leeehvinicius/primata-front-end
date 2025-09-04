@@ -22,7 +22,7 @@ export default function PrivateLayout({ children }: { children: React.ReactNode 
     // Mostra loading enquanto verifica autenticação
     if (isLoading || !hasInitialized) {
         return (
-            <div className="min-h-screen grid place-items-center bg-[#0b1220]">
+            <div className="min-h-screen grid place-items-center bg-gradient-to-br from-green-50 to-emerald-50">
                 <LoadingSpinner 
                     size="lg" 
                     text="Verificando autenticação..." 
@@ -37,11 +37,13 @@ export default function PrivateLayout({ children }: { children: React.ReactNode 
     }
 
     return (
-        <div className="min-h-screen grid grid-cols-[260px_1fr]">
+        <div className="h-screen bg-gray-50 flex overflow-hidden">
             <Sidebar />
-            <div className="flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
                 <Topbar />
-                <main className="p-6">{children}</main>
+                <main className="flex-1 p-4 overflow-auto">
+                    {children}
+                </main>
             </div>
         </div>
     );

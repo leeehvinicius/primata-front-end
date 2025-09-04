@@ -16,12 +16,12 @@ export default function LoadingSpinner({
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
+    <div className={`flex flex-col items-center justify-center animate-fade-in ${className}`}>
       <div 
-        className={`animate-spin rounded-full border-b-2 border-blue-500 ${sizeClasses[size]}`}
+        className={`animate-spin rounded-full border-4 border-gray-200 border-t-green-500 ${sizeClasses[size]} shadow-lg`}
       />
       {text && (
-        <p className="text-white/60 text-sm mt-2">{text}</p>
+        <p className="text-gray-600 text-sm mt-3 font-medium animate-slide-up">{text}</p>
       )}
     </div>
   );

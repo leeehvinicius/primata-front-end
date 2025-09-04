@@ -11,7 +11,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-br">
-      <body className="bg-neutral-900 text-neutral-100" suppressHydrationWarning>
+      <body className="bg-gray-50 text-gray-900" suppressHydrationWarning>
         {children}
         <ToasterProvider />
         <DevModeIndicator />

@@ -10,10 +10,10 @@ type RangeKey = 'today' | 'week' | 'month' | 'custom'
 
 // ===== Cores (mesmas do Taurin) =====
 const coresPorServico: Record<string, { bg: string; border: string; text: string; chipBg: string; chipText: string; headBg: string }> = {
-    'Câmara Hiperbárica': { bg: 'bg-blue-900/20', border: 'border-blue-600/40', text: 'text-blue-200', chipBg: 'bg-blue-600/20', chipText: 'text-blue-300', headBg: 'bg-blue-600/10' },
-    'Drenagem Pós-Cirurgia': { bg: 'bg-rose-900/20', border: 'border-rose-600/40', text: 'text-rose-200', chipBg: 'bg-rose-600/20', chipText: 'text-rose-300', headBg: 'bg-rose-600/10' },
-    'Hingetáveis': { bg: 'bg-amber-900/20', border: 'border-amber-500/40', text: 'text-amber-200', chipBg: 'bg-amber-500/20', chipText: 'text-amber-300', headBg: 'bg-amber-500/10' },
-    'Nutricionista': { bg: 'bg-emerald-900/20', border: 'border-emerald-600/40', text: 'text-emerald-200', chipBg: 'bg-emerald-600/20', chipText: 'text-emerald-300', headBg: 'bg-emerald-600/10' },
+    'Câmara Hiperbárica': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', chipBg: 'bg-blue-100', chipText: 'text-blue-700', headBg: 'bg-blue-100' },
+    'Drenagem Pós-Cirurgia': { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-800', chipBg: 'bg-rose-100', chipText: 'text-rose-700', headBg: 'bg-rose-100' },
+    'Hingetáveis': { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', chipBg: 'bg-amber-100', chipText: 'text-amber-700', headBg: 'bg-amber-100' },
+    'Nutricionista': { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-800', chipBg: 'bg-emerald-100', chipText: 'text-emerald-700', headBg: 'bg-emerald-100' },
 }
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -29,11 +29,11 @@ function endOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth() + 1
 function StatBox({ title, count, total, method }: { title: string; count: number; total: number; method: PaymentMethod }) {
     const c = PAYMENT_METHOD_COLORS[method] || PAYMENT_METHOD_COLORS.OTHER
     return (
-        <div className={`rounded-2xl p-4 border border-white/10 ${c.bg}`}>
-            <div className="text-xs text-white/60">{title}</div>
+        <div className={`rounded-2xl p-4 border border-gray-200 ${c.bg}`}>
+            <div className="text-xs text-gray-600">{title}</div>
             <div className="mt-1 flex items-baseline justify-between">
                 <div className={`text-3xl font-bold ${c.text}`}>{BRL.format(total)}</div>
-                <div className="text-white/60 text-sm">{count}x</div>
+                <div className="text-gray-600 text-sm">{count}x</div>
             </div>
         </div>
     )
@@ -41,8 +41,8 @@ function StatBox({ title, count, total, method }: { title: string; count: number
 
 function TabelaServico({ titulo, dados }: { titulo: string; dados: any[] }) {
     const cores = coresPorServico[titulo] ?? {
-        bg: 'bg-slate-900/20', border: 'border-slate-600/40', text: 'text-slate-200',
-        chipBg: 'bg-slate-600/20', chipText: 'text-slate-300', headBg: 'bg-slate-600/10'
+        bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-800',
+        chipBg: 'bg-slate-100', chipText: 'text-slate-700', headBg: 'bg-slate-100'
     }
     return (
         <div className={`rounded-2xl border ${cores.border} ${cores.bg} backdrop-blur-sm`}>
@@ -52,7 +52,7 @@ function TabelaServico({ titulo, dados }: { titulo: string; dados: any[] }) {
             <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                     <thead>
-                        <tr className={`text-left text-white/70 ${cores.headBg}`}>
+                        <tr className={`text-left text-gray-700 ${cores.headBg}`}>
                             <th className="px-4 py-2 font-semibold">Cliente</th>
                             <th className="px-4 py-2 font-semibold">Serviço</th>
                             <th className="px-4 py-2 font-semibold">Status</th>
@@ -62,9 +62,9 @@ function TabelaServico({ titulo, dados }: { titulo: string; dados: any[] }) {
                     </thead>
                     <tbody>
                         {dados.map((item, i) => (
-                            <tr key={item.id} className={`border-t border-white/5 ${i % 2 ? 'bg-white/5' : ''}`}>
-                                <td className="px-4 py-2 whitespace-nowrap text-white/90">{item.clientId}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-white/80">{item.serviceId}</td>
+                            <tr key={item.id} className={`border-t border-gray-100 ${i % 2 ? 'bg-gray-50' : ''}`}>
+                                <td className="px-4 py-2 whitespace-nowrap text-gray-900">{item.clientId}</td>
+                                <td className="px-4 py-2 whitespace-nowrap text-gray-800">{item.serviceId}</td>
                                 <td className="px-4 py-2 whitespace-nowrap">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs ${PAYMENT_STATUS_COLORS[item.paymentStatus].bg} ${PAYMENT_STATUS_COLORS[item.paymentStatus].text}`}>
                                         {PAYMENT_STATUS_LABELS[item.paymentStatus]}
@@ -75,11 +75,11 @@ function TabelaServico({ titulo, dados }: { titulo: string; dados: any[] }) {
                                         {PAYMENT_METHOD_LABELS[item.paymentMethod]}
                                     </span>
                                 </td>
-                                <td className="px-4 py-2 whitespace-nowrap text-right text-white/90">{BRL.format(item.amount)}</td>
+                                <td className="px-4 py-2 whitespace-nowrap text-right text-gray-900">{BRL.format(item.amount)}</td>
                             </tr>
                         ))}
                         {!dados.length && (
-                            <tr><td colSpan={5} className="px-4 py-6 text-center text-white/50">Sem lançamentos neste serviço</td></tr>
+                            <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">Sem lançamentos neste serviço</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -174,7 +174,7 @@ export default function BillingPage() {
     if (loading && payments.length === 0) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-white/60">Carregando dados financeiros...</div>
+                <div className="text-gray-600">Carregando dados financeiros...</div>
             </div>
         )
     }
@@ -183,7 +183,7 @@ export default function BillingPage() {
     if (error) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-red-400">Erro ao carregar dados: {error}</div>
+                <div className="text-red-600">Erro ao carregar dados: {error}</div>
             </div>
         )
     }
@@ -192,7 +192,7 @@ export default function BillingPage() {
         <div className="grid gap-6">
             {/* Header + filtro inline */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <h1 className="text-2xl font-semibold">Financeiro</h1>
+                <h1 className="text-2xl font-semibold text-gray-900">Financeiro</h1>
 
                 <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
                     <div className="relative">
@@ -209,13 +209,13 @@ export default function BillingPage() {
                         <>
                             <div className="relative">
                                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor"><path d="M6 2a1 1 0 012 0v1h4V2a1 1 0 112 0v1h1.5A1.5 0 0117 4.5v12A1.5 0 0115.5 18h-11A1.5 0 013 16.5v-12A1.5 0 014.5 3H6V2zM4.5 6h11v10.5a.5.5 0 01-.5.5h-10a.5.5 0 01-.5-.5V6z" /></svg>
-                                <input type="date" className="h-11 w-[12rem] rounded-xl bg-slate-900/60 border border-white/20 text-white px-9 focus:outline-none focus:ring-2 focus:ring-white/30"
+                                <input type="date" className="h-11 w-[12rem] rounded-xl bg-white border border-gray-300 text-gray-900 px-9 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     value={from} onChange={e => setFrom(e.target.value)} />
                             </div>
-                            <span className="text-white/50">–</span>
+                            <span className="text-gray-500">–</span>
                             <div className="relative">
                                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor"><path d="M6 2a1 1 0 012 0v1h4V2a1 1 0 112 0v1h1.5A1.5 0 0117 4.5v12A1.5 0 0115.5 18h-11A1.5 0 013 16.5v-12A1.5 0 014.5 3H6V2zM4.5 6h11v10.5a.5.5 0 01-.5.5h-10a.5.5 0 01-.5-.5V6z" /></svg>
-                                <input type="date" className="h-11 w-[12rem] rounded-xl bg-slate-900/60 border border-white/20 text-white px-9 focus:outline-none focus:ring-2 focus:ring-white/30"
+                                <input type="date" className="h-11 w-[12rem] rounded-xl bg-white border border-gray-300 text-gray-900 px-9 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     value={to} onChange={e => setTo(e.target.value)} />
                             </div>
                         </>

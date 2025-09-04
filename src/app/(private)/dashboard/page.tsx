@@ -31,7 +31,7 @@ type Appointment = {
     value: number;      // ticket médio
 };
 
-// Gera dados “bonitos” para os últimos N dias
+// Gera dados "bonitos" para os últimos N dias
 function generateMockData(days = 120) {
     const txs: Transaction[] = [];
     const appts: Appointment[] = [];
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         }));
         const countByMethod = PAYMENT_METHODS.map(m => ({
             name: m,
-            qtd: tx.filter(t => t.method === m).length,
+            value: tx.filter(t => t.method === m).length,
         }));
         const total = Number(tx.reduce((acc, t) => acc + t.value, 0).toFixed(2));
 
@@ -125,7 +125,7 @@ export default function DashboardPage() {
         }));
         const countByService = SERVICES.map(s => ({
             name: s,
-            qtd: ap.filter(a => a.service === s).length,
+            value: ap.filter(a => a.service === s).length,
         }));
 
         return {
@@ -140,26 +140,25 @@ export default function DashboardPage() {
     return (
         <div className="space-y-6">
             {/* Filtros */}
-            {/* Filtros */}
             <div className="flex flex-wrap gap-3 items-end">
                 <div>
-                    <label className="block text-sm text-neutral-400 mb-1">De</label>
+                    <label className="block text-sm text-gray-600 mb-1">De</label>
                     <input
                         type="date"
                         value={start}
                         max={end}
                         onChange={(e) => setStart(e.target.value)}
-                        className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="bg-white border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>
                 <div>
-                    <label className="block text-sm text-neutral-400 mb-1">Até</label>
+                    <label className="block text-sm text-gray-600 mb-1">Até</label>
                     <input
                         type="date"
                         value={end}
                         min={start}
                         onChange={(e) => setEnd(e.target.value)}
-                        className="bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="bg-white border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                 </div>
 
@@ -190,9 +189,9 @@ export default function DashboardPage() {
                 {/* Bloco Financeiro */}
                 <section className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold">Financeiro</h2>
-                        <div className="text-sm text-neutral-400">
-                            Total no período: <span className="text-white font-semibold">R$ {totalFin.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                        <h2 className="text-xl font-semibold text-gray-900">Financeiro</h2>
+                        <div className="text-sm text-gray-600">
+                            Total no período: <span className="text-gray-900 font-semibold">R$ {totalFin.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
 
@@ -220,10 +219,10 @@ export default function DashboardPage() {
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={finAggCount} barSize={32}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" tick={{ fill: "#a3a3a3" }} />
-                                    <YAxis tick={{ fill: "#a3a3a3" }} />
+                                    <XAxis dataKey="name" tick={{ fill: "#6b7280" }} />
+                                    <YAxis tick={{ fill: "#6b7280" }} />
                                     <Tooltip />
-                                    <Bar dataKey="qtd">
+                                    <Bar dataKey="value">
                                         {finAggCount.map((_, i) => <Cell key={i} fill={COLORS_FIN[i % COLORS_FIN.length]} />)}
                                     </Bar>
                                 </BarChart>
@@ -234,7 +233,7 @@ export default function DashboardPage() {
 
                 {/* Bloco Serviços */}
                 <section className="space-y-4">
-                    <h2 className="text-xl font-semibold">Serviços</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">Serviços</h2>
 
                     <div className="grid lg:grid-cols-2 gap-6">
                         <ChartCard title="Participação por serviço (R$)">
@@ -260,10 +259,10 @@ export default function DashboardPage() {
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={srvAggCount} barSize={32}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" tick={{ fill: "#a3a3a3" }} />
-                                    <YAxis tick={{ fill: "#a3a3a3" }} />
+                                    <XAxis dataKey="name" tick={{ fill: "#6b7280" }} />
+                                    <YAxis tick={{ fill: "#6b7280" }} />
                                     <Tooltip />
-                                    <Bar dataKey="qtd">
+                                    <Bar dataKey="value">
                                         {srvAggCount.map((_, i) => <Cell key={i} fill={COLORS_SRV[i % COLORS_SRV.length]} />)}
                                     </Bar>
                                 </BarChart>
@@ -281,7 +280,7 @@ function PresetButton({ label, onClick }: { label: string; onClick: () => void }
     return (
         <button
             onClick={onClick}
-            className="px-3 py-2 rounded-lg border border-neutral-700 hover:border-indigo-500 hover:bg-neutral-800 transition text-sm"
+            className="px-3 py-2 rounded-lg border border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition text-sm text-gray-700"
         >
             {label}
         </button>
@@ -291,9 +290,9 @@ function PresetButton({ label, onClick }: { label: string; onClick: () => void }
 // Card genérico
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium">{title}</h3>
+                <h3 className="font-medium text-gray-900">{title}</h3>
             </div>
             {children}
         </div>
