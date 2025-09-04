@@ -1,92 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { format, subDays, parseISO, isWithinInterval } from "date-fns";
 import ExportPDFButton from "@/components/ExportPDFButton";
+import { FinanceService } from "@/lib/financeService";
+import type { Payment } from "@/types/finance";
 
 // Paletas
 const COLORS_FIN = ["#22c55e", "#3b82f6", "#eab308"]; // pix, cartão, dinheiro
 const COLORS_SRV = ["#a855f7", "#ef4444", "#06b6d4"]; // serviços
 
-// Nomes fixos
-const PAYMENT_METHODS = ["Pix", "Cartão", "Dinheiro"] as const;
-const SERVICES = ["Limpeza de Pele", "Massagem Relaxante", "Depilação a Laser"] as const;
-
-type Payment = typeof PAYMENT_METHODS[number];
-type Service = typeof SERVICES[number];
-
-type Transaction = {
-    date: string;       // ISO
-    method: Payment;
-    value: number;      // R$
+// Rótulos fixos de exibição
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+    PIX: "Pix",
+    CREDIT_CARD: "Cartão",
+    DEBIT_CARD: "Cartão",
+    CASH: "Dinheiro",
 };
-
-type Appointment = {
-    date: string;       // ISO
-    service: Service;
-    value: number;      // ticket médio
-};
-
-// Gera dados "bonitos" para os últimos N dias
-function generateMockData(days = 120) {
-    const txs: Transaction[] = [];
-    const appts: Appointment[] = [];
-    const today = new Date();
-
-    for (let i = 0; i < days; i++) {
-        const d = subDays(today, i);
-        const iso = d.toISOString();
-
-        // volume financeiro diário
-        const baseFin = 10 + Math.floor(Math.random() * 20); // 10~30 registros
-        for (let j = 0; j < baseFin; j++) {
-            const method = weightedPick<Payment>([
-                ["Pix", 0.52],
-                ["Cartão", 0.35],
-                ["Dinheiro", 0.13],
-            ]);
-            const value = randomBetween(40, 450);
-            txs.push({ date: iso, method, value });
-        }
-
-        // volume de serviços diário
-        const baseSrv = 6 + Math.floor(Math.random() * 12); // 6~18 atendimentos
-        for (let k = 0; k < baseSrv; k++) {
-            const service = weightedPick<Service>([
-                ["Limpeza de Pele", 0.42],
-                ["Massagem Relaxante", 0.33],
-                ["Depilação a Laser", 0.25],
-            ]);
-            const value =
-                service === "Depilação a Laser" ? randomBetween(180, 650) :
-                    service === "Massagem Relaxante" ? randomBetween(90, 280) :
-                        randomBetween(70, 220);
-            appts.push({ date: iso, service, value });
-        }
-    }
-
-    return { txs, appts };
-}
-
-function randomBetween(min: number, max: number) {
-    return Math.round((Math.random() * (max - min) + min) * 100) / 100;
-}
-
-function weightedPick<T>(pairs: [T, number][]): T {
-    const r = Math.random();
-    let acc = 0;
-    for (const [item, w] of pairs) {
-        acc += w;
-        if (r <= acc) return item;
-    }
-    return pairs[pairs.length - 1][0];
-}
-
-const MOCK = generateMockData();
 
 export default function DashboardPage() {
     // filtros: hoje até últimos 30 dias (default)
@@ -99,43 +33,64 @@ export default function DashboardPage() {
         return { startDate, endDate };
     }, [start, end]);
 
-    // aplica filtro no mock
-    const { finAgg, finAggCount, srvAgg, srvAggCount, totalFin } = useMemo(() => {
-        const inRange = (iso: string) =>
-            isWithinInterval(parseISO(iso), { start: range.startDate, end: range.endDate });
+    const [loading, setLoading] = useState(false);
+    const [payments, setPayments] = useState<Payment[]>([]);
 
-        const tx = MOCK.txs.filter(t => inRange(t.date));
-        const ap = MOCK.appts.filter(a => inRange(a.date));
-
-        // Financeiro: soma por método
-        const sumByMethod = PAYMENT_METHODS.map(m => ({
-            name: m,
-            value: Number(tx.filter(t => t.method === m).reduce((acc, t) => acc + t.value, 0).toFixed(2)),
-        }));
-        const countByMethod = PAYMENT_METHODS.map(m => ({
-            name: m,
-            value: tx.filter(t => t.method === m).length,
-        }));
-        const total = Number(tx.reduce((acc, t) => acc + t.value, 0).toFixed(2));
-
-        // Serviços: soma por serviço
-        const sumByService = SERVICES.map(s => ({
-            name: s,
-            value: Number(ap.filter(a => a.service === s).reduce((acc, a) => acc + a.value, 0).toFixed(2)),
-        }));
-        const countByService = SERVICES.map(s => ({
-            name: s,
-            value: ap.filter(a => a.service === s).length,
-        }));
-
-        return {
-            finAgg: sumByMethod,
-            finAggCount: countByMethod,
-            srvAgg: sumByService,
-            srvAggCount: countByService,
-            totalFin: total,
+    // Carregar dados reais do período
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const res = await FinanceService.getPayments({ startDate: start, endDate: end, limit: 100 });
+                const list = Array.isArray(res?.payments) ? res.payments : (Array.isArray((res as any)?.data) ? (res as any).data : []);
+                setPayments(list as Payment[]);
+            } catch (e) {
+                setPayments([]);
+            } finally {
+                setLoading(false);
+            }
         };
-    }, [range]);
+        fetchData();
+    }, [start, end]);
+
+    // Agregações
+    const { finAgg, finAggCount, srvAgg, srvAggCount, totalFin } = useMemo(() => {
+        // Totais por método (agrupando crédito/débito em "Cartão")
+        const amountByLabel: Record<string, number> = {};
+        const countByLabel: Record<string, number> = {};
+
+        for (const p of payments) {
+            const label = PAYMENT_METHOD_LABELS[p.paymentMethod] || null;
+            if (!label) continue;
+            const net = Math.max(0, (p.amount || 0) - (p.discountAmount || 0));
+            amountByLabel[label] = (amountByLabel[label] || 0) + net;
+            countByLabel[label] = (countByLabel[label] || 0) + 1;
+        }
+
+        const order = ["Pix", "Cartão", "Dinheiro"];
+        const sumByMethod = order
+            .filter((k) => amountByLabel[k] !== undefined)
+            .map((k) => ({ name: k, value: Number((amountByLabel[k] || 0).toFixed(2)) }));
+        const quantityByMethod = order
+            .filter((k) => countByLabel[k] !== undefined)
+            .map((k) => ({ name: k, value: countByLabel[k] || 0 }));
+
+        // Serviços por nome (usa serviceName)
+        const amountByService: Record<string, number> = {};
+        const countByService: Record<string, number> = {};
+        for (const p of payments) {
+            const s = p.serviceName || "Outros";
+            const net = Math.max(0, (p.amount || 0) - (p.discountAmount || 0));
+            amountByService[s] = (amountByService[s] || 0) + net;
+            countByService[s] = (countByService[s] || 0) + 1;
+        }
+        const sumByService = Object.keys(amountByService).map((k) => ({ name: k, value: Number(amountByService[k].toFixed(2)) }));
+        const qtyByService = Object.keys(countByService).map((k) => ({ name: k, value: countByService[k] }));
+
+        const total = Object.values(amountByLabel).reduce((a, b) => a + b, 0);
+
+        return { finAgg: sumByMethod, finAggCount: quantityByMethod, srvAgg: sumByService, srvAggCount: qtyByService, totalFin: total };
+    }, [payments]);
 
     return (
         <div className="space-y-6">
