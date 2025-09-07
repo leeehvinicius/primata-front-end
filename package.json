@@ -2,11 +2,17 @@
   "name": "primata-front-end",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
-    "lint": "eslint"
+    "build": "next build",
+    "prestart": "node -e \"process.exit(0)\"",
+    "start": "next start -p ${PORT:-3000}",
+    "start:prod": "npm run build && next start -p ${PORT:-3000}",
+    "lint": "next lint",
+    "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",

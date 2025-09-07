@@ -1,7 +1,7 @@
 // Configuração da aplicação
 export const config = {
   // URL da API - mantendo compatibilidade com sistema existente
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'https://api.consutorio.revittahcare.com.br/api',
   
   // Configurações específicas do financeiro
   finance: {
