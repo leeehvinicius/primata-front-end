@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react"
 import { useFinance } from "../../../lib/useFinance"
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHOD_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "../../../types/finance"
-import type { PaymentMethod, PaymentStatus } from "../../../types/finance"
+import type { PaymentMethod, Payment } from "../../../types/finance"
 
 // ===== Tipos =====
 type RangeKey = 'today' | 'week' | 'month' | 'custom'
@@ -39,7 +39,7 @@ function StatBox({ title, count, total, method }: { title: string; count: number
     )
 }
 
-function TabelaServico({ titulo, dados }: { titulo: string; dados: any[] }) {
+function TabelaServico({ titulo, dados }: { titulo: string; dados: Payment[] }) {
     const cores = coresPorServico[titulo] ?? {
         bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-800',
         chipBg: 'bg-slate-100', chipText: 'text-slate-700', headBg: 'bg-slate-100'
@@ -100,7 +100,6 @@ export default function BillingPage() {
         loading, 
         error, 
         paymentsByMethod, 
-        paymentsByStatus,
         updateFilters 
     } = useFinance()
 
@@ -151,7 +150,7 @@ export default function BillingPage() {
 
     // Agrupar pagamentos por serviço (simulado - você pode ajustar conforme sua API)
     const porServico = useMemo(() => {
-        const map: Record<string, any[]> = {
+        const map: Record<string, Payment[]> = {
             'Câmara Hiperbárica': [],
             'Drenagem Pós-Cirurgia': [],
             'Hingetáveis': [],
@@ -225,7 +224,7 @@ export default function BillingPage() {
 
             {/* Cards de estatísticas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-                {Object.entries(PAYMENT_METHOD_COLORS).map(([method, colors]) => {
+                {Object.entries(PAYMENT_METHOD_COLORS).map(([method]) => {
                     const data = paymentsByMethod[method as PaymentMethod] || { count: 0, total: 0 }
                     return (
                         <StatBox 

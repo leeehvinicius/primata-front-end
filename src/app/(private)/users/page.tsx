@@ -6,19 +6,17 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import { useUsers } from "@/lib/useUsers"
+import { User, CreateUserRequest, UpdateUserRequest } from "@/types/users"
 import LoadingSpinner from "@/components/ui/LoadingSpinner"
 import Modal from "@/components/ui/Modal"
 import { 
     Search, 
     Filter, 
-    Plus, 
     Edit, 
     Trash2, 
     UserCheck, 
     UserX, 
     Phone, 
-    Calendar, 
-    Shield, 
     Users, 
     UserPlus,
     Mail,
@@ -47,11 +45,19 @@ const editUserSchema = z.object({
     isActive: z.boolean()
 })
 
-type CreateUserFormData = z.infer<typeof createUserSchema>
-type EditUserFormData = z.infer<typeof editUserSchema>
+// Removido: tipos não utilizados
 
 // ===== Tipos e Utils =====
 type UserRole = 'ADMINISTRADOR' | 'MEDICO' | 'RECEPCIONISTA' | 'SERVICOS_GERAIS'
+
+type UserFormValues = {
+    name: string
+    email: string
+    phone?: string
+    role: string
+    isActive: boolean
+    password?: string
+}
 
 const roleConfig = {
     'ADMINISTRADOR': {
@@ -88,7 +94,7 @@ const roleConfig = {
 function StatCard({ title, value, icon: Icon, color, trend }: {
     title: string
     value: number
-    icon: any
+    icon: React.ComponentType<{ className?: string }>
     color: string
     trend?: { value: number; isPositive: boolean }
 }) {
@@ -111,12 +117,12 @@ function StatCard({ title, value, icon: Icon, color, trend }: {
 }
 
 function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
-    user: any
-    onEdit: (user: any) => void
+    user: User
+    onEdit: (user: User) => void
     onToggleStatus: (userId: string) => void
     onDelete: (userId: string) => void
 }) {
-    const userRole = (user as any).profile?.role || 'SERVICOS_GERAIS'
+    const userRole = user.role || 'SERVICOS_GERAIS'
     const config = roleConfig[userRole as UserRole] || roleConfig['SERVICOS_GERAIS']
     const Icon = config.icon
 
@@ -140,10 +146,10 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
                 </div>
             </td>
             <td className="py-4 pr-4">
-                {(user as any).profile?.phone ? (
+                {user.phone ? (
                     <div className="flex items-center gap-2 text-gray-600">
                         <Phone className="w-4 h-4" />
-                        <span>{(user as any).profile.phone}</span>
+                        <span>{user.phone}</span>
                     </div>
                 ) : (
                     <span className="text-gray-400">-</span>
@@ -151,11 +157,11 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
             </td>
             <td className="py-4 pr-4">
                 <div className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
-                    (user as any).profile?.isActive === true
+                    user.isActive === true
                         ? 'bg-green-100 text-green-700 border border-green-200' 
                         : 'bg-red-100 text-red-700 border border-red-200'
                 }`}>
-                    {(user as any).profile?.isActive === true ? 'Ativo' : 'Inativo'}
+                    {user.isActive === true ? 'Ativo' : 'Inativo'}
                 </div>
             </td>
             <td className="py-4 pr-4 text-gray-500 text-sm">
@@ -173,13 +179,13 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
                     <button
                         onClick={() => onToggleStatus(user.id)}
                         className={`p-2 rounded-lg transition-colors ${
-                            (user as any).profile?.isActive === true
+                            user.isActive === true
                                 ? 'text-gray-400 hover:text-red-600 hover:bg-red-100' 
                                 : 'text-gray-400 hover:text-green-600 hover:bg-green-100'
                         }`}
-                        title={(user as any).profile?.isActive === true ? 'Desativar usuário' : 'Ativar usuário'}
+                        title={user.isActive === true ? 'Desativar usuário' : 'Ativar usuário'}
                     >
-                        {(user as any).profile?.isActive === true ? <UserX size={16} /> : <UserCheck size={16} />}
+                        {user.isActive === true ? <UserX size={16} /> : <UserCheck size={16} />}
                     </button>
                     <button
                         onClick={() => onDelete(user.id)}
@@ -205,10 +211,10 @@ function UserFormModal({
 }: {
     open: boolean
     onClose: () => void
-    user?: any
+    user?: User
     isEdit?: boolean
-    onCreateUser: (data: any) => Promise<void>
-    onUpdateUser: (userId: string, data: any) => Promise<void>
+    onCreateUser: (data: CreateUserRequest) => Promise<void>
+    onUpdateUser: (userId: string, data: UpdateUserRequest) => Promise<void>
 }) {
     const {
         register,
@@ -216,8 +222,8 @@ function UserFormModal({
         formState: { errors, isSubmitting },
         reset,
         setValue
-    } = useForm({
-        resolver: zodResolver(isEdit ? editUserSchema : createUserSchema) as any,
+    } = useForm<UserFormValues>({
+        resolver: zodResolver(isEdit ? editUserSchema : createUserSchema),
         defaultValues: {
             name: '',
             email: '',
@@ -236,9 +242,9 @@ function UserFormModal({
             const formData = {
                 name: user.name || '',
                 email: user.email || '',
-                phone: (user as any).profile?.phone || '',
-                role: (user as any).profile?.role || '',
-                isActive: (user as any).profile?.isActive !== false
+                phone: user.phone || '',
+                role: user.role || '',
+                isActive: user.isActive !== false
             }
             
             
@@ -252,7 +258,7 @@ function UserFormModal({
         }
     }, [open, user, isEdit, setValue, reset])
 
-    const onSubmit = async (data: any) => {
+    const onSubmit = async (data: Record<string, unknown>) => {
         try {
             
             
@@ -274,7 +280,7 @@ function UserFormModal({
                     throw updateError
                 }
             } else {
-                await onCreateUser(data)
+                await onCreateUser(data as unknown as CreateUserRequest)
                 toast.success('Usuário criado com sucesso!')
                 onClose()
                 reset()
@@ -461,7 +467,6 @@ export default function UsersPage() {
         deleteUser,
         createUser,
         updateUser,
-        refreshUsers
     } = useUsers()
 
     const [searchTerm, setSearchTerm] = useState("")
@@ -473,8 +478,8 @@ export default function UsersPage() {
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [selectedUser, setSelectedUser] = useState<any>(null)
-    const [userToDelete, setUserToDelete] = useState<any>(null)
+    const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined)
+    const [userToDelete, setUserToDelete] = useState<User | null>(null)
 
     // ===== Handlers =====
     const handleSearch = () => {
@@ -538,18 +543,18 @@ export default function UsersPage() {
         }
     }
 
-    const handleEditUser = (user: any) => {
+    const handleEditUser = (user: User) => {
         
         setSelectedUser(user)
         setShowEditModal(true)
     }
 
     const handleCreateUser = () => {
-        setSelectedUser(null)
+        setSelectedUser(undefined)
         setShowCreateModal(true)
     }
 
-    const handleCreateUserSubmit = async (data: any) => {
+    const handleCreateUserSubmit = async (data: CreateUserRequest) => {
         try {
             await createUser({
                 name: data.name,
@@ -564,7 +569,7 @@ export default function UsersPage() {
         }
     }
 
-    const handleUpdateUserSubmit = async (userId: string, data: any) => {
+    const handleUpdateUserSubmit = async (userId: string, data: UpdateUserRequest) => {
         try {
             
             
@@ -783,7 +788,7 @@ export default function UsersPage() {
             <UserFormModal
                 open={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                user={null}
+                user={undefined}
                 isEdit={false}
                 onCreateUser={handleCreateUserSubmit}
                 onUpdateUser={handleUpdateUserSubmit}

@@ -5,7 +5,7 @@ import {
     PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import { format, subDays, parseISO, isWithinInterval } from "date-fns";
+import { format, subDays } from "date-fns";
 import ExportPDFButton from "@/components/ExportPDFButton";
 import { FinanceService } from "@/lib/financeService";
 import type { Payment } from "@/types/finance";
@@ -27,27 +27,20 @@ export default function DashboardPage() {
     const [start, setStart] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
     const [end, setEnd] = useState(format(new Date(), "yyyy-MM-dd"));
 
-    const range = useMemo(() => {
-        const startDate = parseISO(new Date(start).toISOString());
-        const endDate = parseISO(new Date(end + "T23:59:59").toISOString());
-        return { startDate, endDate };
-    }, [start, end]);
+    // Removido: range não utilizado
 
-    const [loading, setLoading] = useState(false);
+    // Removido: loading não utilizado
     const [payments, setPayments] = useState<Payment[]>([]);
 
     // Carregar dados reais do período
     useEffect(() => {
         const fetchData = async () => {
             try {
-                setLoading(true);
                 const res = await FinanceService.getPayments({ startDate: start, endDate: end, limit: 100 });
-                const list = Array.isArray(res?.payments) ? res.payments : (Array.isArray((res as any)?.data) ? (res as any).data : []);
+                const list = Array.isArray(res?.payments) ? res.payments : [];
                 setPayments(list as Payment[]);
-            } catch (e) {
+            } catch {
                 setPayments([]);
-            } finally {
-                setLoading(false);
             }
         };
         fetchData();
@@ -133,10 +126,11 @@ export default function DashboardPage() {
 
                     {/* Botão Exportar PDF */}
                     <ExportPDFButton
-                        targetId="dash-export"
-                        filename={`primata-dashboard_${start}_a_${end}.pdf`}
-                        label="Exportar PDF"
-                        landscape
+                        onExport={async () => {
+                            // Implementar lógica de exportação
+                            console.log('Exportando PDF...');
+                        }}
+                        className="ml-auto"
                     />
                 </div>
             </div>

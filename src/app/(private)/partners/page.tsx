@@ -1,11 +1,10 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 import Modal from "@/components/ui/Modal"
 import LoadingSpinner from "@/components/ui/LoadingSpinner"
@@ -32,7 +31,7 @@ type HealthPlanRow = {
 }
 
 export default function PartnersPage() {
-    const router = useRouter()
+    // Removido: router não utilizado
     const [partners, setPartners] = useState<HealthPlanRow[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [modalOpen, setModalOpen] = useState<boolean>(false)
@@ -55,11 +54,11 @@ export default function PartnersPage() {
     async function loadPartners() {
         try {
             setLoading(true)
-            const response = await api.get<any>("/agreements/health-plans")
-            const list: HealthPlanRow[] = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : []
+            const response = await api.get<{ data: HealthPlanRow[] }>("/agreements/health-plans")
+            const list: HealthPlanRow[] = Array.isArray(response?.data) ? response.data : []
             setPartners(list)
-        } catch (error: any) {
-            toast.error(error?.message || "Erro ao carregar parceiros")
+        } catch (error: unknown) {
+            toast.error((error as Error)?.message || "Erro ao carregar parceiros")
         } finally {
             setLoading(false)
         }
@@ -118,8 +117,8 @@ export default function PartnersPage() {
             }
             setModalOpen(false)
             await loadPartners()
-        } catch (error: any) {
-            toast.error(error?.message || "Erro ao salvar parceiro")
+        } catch (error: unknown) {
+            toast.error((error as Error)?.message || "Erro ao salvar parceiro")
         }
     }
 
@@ -128,8 +127,8 @@ export default function PartnersPage() {
             await api.delete(`/agreements/health-plans/${id}`)
             toast.success("Parceiro excluído")
             await loadPartners()
-        } catch (error: any) {
-            toast.error(error?.message || "Erro ao excluir parceiro")
+        } catch (error: unknown) {
+            toast.error((error as Error)?.message || "Erro ao excluir parceiro")
         }
     }
 

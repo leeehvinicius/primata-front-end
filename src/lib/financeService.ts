@@ -1,9 +1,10 @@
 import { api } from './api';
 import type {
-  Payment,
   PaymentListResponse,
   PaymentFilters,
-  PaymentStats
+  PaymentStats,
+  PaymentMethod,
+  PaymentStatus
 } from '../types/finance';
 
 export class FinanceService {
@@ -46,7 +47,7 @@ export class FinanceService {
   static async getPaymentsByMethod(method: string, filters: Omit<PaymentFilters, 'paymentMethod'> = {}): Promise<PaymentListResponse> {
     return this.getPayments({
       ...filters,
-      paymentMethod: method as any
+      paymentMethod: method as PaymentMethod
     });
   }
 
@@ -54,7 +55,7 @@ export class FinanceService {
   static async getPaymentsByStatus(status: string, filters: Omit<PaymentFilters, 'paymentStatus'> = {}): Promise<PaymentListResponse> {
     return this.getPayments({
       ...filters,
-      paymentStatus: status as any
+      paymentStatus: status as PaymentStatus
     });
   }
 }

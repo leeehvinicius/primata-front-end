@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 
 export default function DevModeIndicator() {
     if (process.env.NODE_ENV !== 'development') return null

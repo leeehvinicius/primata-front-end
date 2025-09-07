@@ -7,7 +7,8 @@ import type {
   UpdateUserRequest, 
   UserFilters, 
   UserStats, 
-  UserRoleInfo 
+  UserRoleInfo,
+  UserRole
 } from '../types/users'
 
 interface UseUsersState {
@@ -122,7 +123,7 @@ export function useUsers(): UseUsersState & UseUsersActions {
 
   // Filtrar por role
   const filterByRole = useCallback(async (role: string) => {
-    await loadUsers({ role: role as any, page: 1 })
+    await loadUsers({ role: role as UserRole, page: 1 })
   }, [loadUsers])
 
   // Filtrar por status
@@ -210,7 +211,7 @@ export function useUsers(): UseUsersState & UseUsersActions {
       })
       return null
     }
-  }, [state.users, updateState, loadUsers])
+  }, [updateState, loadUsers])
 
   // Deletar usuário
   const deleteUser = useCallback(async (userId: string): Promise<boolean> => {
@@ -306,7 +307,7 @@ export function useUsers(): UseUsersState & UseUsersActions {
     }
     
     initializeData()
-  }, []) // Carregamento inicial apenas uma vez
+  }, [loadRoles, loadStats, loadUsers]) // Carregamento inicial quando as funções mudarem
 
   return {
     ...state,

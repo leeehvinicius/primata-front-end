@@ -14,7 +14,7 @@ export function useAuthOnce() {
             // Executa restore imediatamente na inicialização
             auth.restore()
         }
-    }, [hasInitialized, auth.restore])
+    }, [hasInitialized, auth])
 
     return {
         ...auth,

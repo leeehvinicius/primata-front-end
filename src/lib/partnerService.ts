@@ -20,7 +20,12 @@ import {
   UpdateDiscountData,
   UpdateCoverageLimitData,
   UpdatePaymentData,
-  PlanType
+  PlanType,
+  CreateIntegrationData,
+  UpdateIntegrationData,
+  HealthPlanReport,
+  ClientReport,
+  CoverageDetails
 } from '@/types/partners'
 
 export class PartnerService {
@@ -481,7 +486,7 @@ export class PartnerService {
   }
 
   // Criar integração
-  static async createIntegration(healthPlanId: string, data: any): Promise<OperatorIntegration> {
+  static async createIntegration(healthPlanId: string, data: CreateIntegrationData): Promise<OperatorIntegration> {
     const response = await fetch(`${config.apiUrl}/agreements/health-plans/${healthPlanId}/integrations`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
@@ -510,7 +515,7 @@ export class PartnerService {
   }
 
   // Atualizar integração
-  static async updateIntegration(id: string, data: any): Promise<OperatorIntegration> {
+  static async updateIntegration(id: string, data: UpdateIntegrationData): Promise<OperatorIntegration> {
     const response = await fetch(`${config.apiUrl}/agreements/integrations/${id}`, {
       method: 'PUT',
       headers: this.getAuthHeaders(),
@@ -541,7 +546,7 @@ export class PartnerService {
   // ===== RELATÓRIOS =====
 
   // Relatório por plano de saúde
-  static async getHealthPlanReport(healthPlanId: string, startDate: string, endDate: string): Promise<any> {
+  static async getHealthPlanReport(healthPlanId: string, startDate: string, endDate: string): Promise<HealthPlanReport> {
     const response = await fetch(`${config.apiUrl}/agreements/reports/health-plans/${healthPlanId}?startDate=${startDate}&endDate=${endDate}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
@@ -555,7 +560,7 @@ export class PartnerService {
   }
 
   // Relatório por cliente
-  static async getClientReport(clientId: string): Promise<any> {
+  static async getClientReport(clientId: string): Promise<ClientReport> {
     const response = await fetch(`${config.apiUrl}/agreements/reports/clients/${clientId}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
@@ -586,7 +591,7 @@ export class PartnerService {
   }
 
   // Verificar cobertura de convênio
-  static async checkCoverage(agreementId: string, serviceId: string, amount: number): Promise<{ isCovered: boolean; coverageDetails: any }> {
+  static async checkCoverage(agreementId: string, serviceId: string, amount: number): Promise<{ isCovered: boolean; coverageDetails: CoverageDetails }> {
     const response = await fetch(`${config.apiUrl}/agreements/check-coverage`, {
       method: 'POST',
       headers: this.getAuthHeaders(),

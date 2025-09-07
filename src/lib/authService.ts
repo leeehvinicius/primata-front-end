@@ -106,7 +106,7 @@ export class AuthService {
   }
 
   // Verifica se é um erro de rede/API indisponível
-  private static isNetworkError(error: any): boolean {
+  private static isNetworkError(error: unknown): boolean {
     if (error instanceof Error) {
       return error.message.includes('Failed to fetch') || 
              error.message.includes('NetworkError') ||

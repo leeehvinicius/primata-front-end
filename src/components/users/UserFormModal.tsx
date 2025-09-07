@@ -7,8 +7,17 @@ type Props = {
     onClose: () => void
     title: string
     onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-    register: any
-    errors: any
+    register: (name: string) => {
+        name: string
+        ref: (element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null) => void
+        onChange: (
+            event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+        ) => void
+        onBlur: (
+            event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+        ) => void
+    }
+    errors: Record<string, { message?: string }>
     saving?: boolean
     profiles: { id: string; name: string }[]
     isEdit?: boolean

@@ -17,7 +17,7 @@ const items = [
 
 export default function Sidebar() {
     const pathname = usePathname()
-    const { logout, user } = useAuthOnce()
+    const { logout } = useAuthOnce()
     const router = useRouter()
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [isMobileOpen, setIsMobileOpen] = useState(false)

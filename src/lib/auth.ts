@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { AuthService } from './authService'
-import type { LoginCredentials, UserProfile, AuthState } from '../types/auth'
+import type { LoginCredentials, AuthState } from '../types/auth'
 
 export const useAuth = create<AuthState>((set, get) => ({
     user: null,

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { FinanceService } from './financeService';
 import type {
   Payment,
-  PaymentListResponse,
   PaymentFilters,
   PaymentStats
 } from '../types/finance';
@@ -211,7 +210,7 @@ export const useFinance = (initialFilters: PaymentFilters = {}) => {
   useEffect(() => {
     fetchPayments();
     fetchStats();
-  }, []); // Executa apenas uma vez na montagem
+  }, [fetchPayments, fetchStats]); // Executa quando as funções mudarem
 
   return {
     // Estado

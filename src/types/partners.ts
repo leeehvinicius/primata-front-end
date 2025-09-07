@@ -202,8 +202,8 @@ export interface OperatorIntegration {
   healthPlanId: string
   integrationType: IntegrationType
   endpoint?: string
-  credentials?: Record<string, any>
-  settings?: Record<string, any>
+  credentials?: Record<string, unknown>
+  settings?: Record<string, unknown>
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -420,4 +420,73 @@ export const alertTypeConfig = {
     bg: 'bg-yellow-100',
     border: 'border-yellow-200'
   }
+}
+
+// Tipos adicionais para integrações e relatórios
+export interface CreateIntegrationData {
+  type: IntegrationType;
+  name: string;
+  description?: string;
+  configuration: Record<string, unknown>;
+  isActive: boolean;
+}
+
+export interface UpdateIntegrationData {
+  name?: string;
+  description?: string;
+  configuration?: Record<string, unknown>;
+  isActive?: boolean;
+}
+
+export interface HealthPlanReport {
+  healthPlanId: string;
+  healthPlanName: string;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  totalAgreements: number;
+  activeAgreements: number;
+  totalRevenue: number;
+  averageAgreementValue: number;
+  topServices: Array<{
+    serviceId: string;
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+  agreementsByStatus: Record<string, number>;
+}
+
+export interface ClientReport {
+  clientId: string;
+  clientName: string;
+  totalAgreements: number;
+  activeAgreements: number;
+  totalSpent: number;
+  averageAgreementValue: number;
+  agreements: Array<{
+    id: string;
+    healthPlanName: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    value: number;
+  }>;
+}
+
+export interface CoverageDetails {
+  isCovered: boolean;
+  coveragePercentage: number;
+  maxCoverageAmount: number;
+  remainingCoverage: number;
+  applicableDiscounts: Array<{
+    type: string;
+    percentage: number;
+    description: string;
+  }>;
+  restrictions: Array<{
+    type: string;
+    description: string;
+  }>;
 }

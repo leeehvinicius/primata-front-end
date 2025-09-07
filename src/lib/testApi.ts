@@ -1,5 +1,5 @@
 // Arquivo para testar a conectividade com a API
-import { api } from './api';
+// Removido: api não utilizado
 
 export async function testApiConnection() {
   try {
@@ -43,7 +43,7 @@ export async function testAuthEndpoints() {
     try {
       const healthResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/health`);
       console.log('🏥 Health endpoint status:', healthResponse.status);
-    } catch (error) {
+    } catch {
       console.log('🏥 Health endpoint não disponível');
     }
     
@@ -68,10 +68,16 @@ export async function runAllTests() {
   return connectionTest && authTest;
 }
 
+type TestPrimataAPI = {
+  testConnection: typeof testApiConnection
+  testAuth: typeof testAuthEndpoints
+  runAll: typeof runAllTests
+}
+
 // Executa os testes se o arquivo for importado diretamente
 if (typeof window !== 'undefined') {
   // No browser, adiciona ao console global para testes manuais
-  (window as any).testPrimataAPI = {
+  (window as unknown as { testPrimataAPI: TestPrimataAPI }).testPrimataAPI = {
     testConnection: testApiConnection,
     testAuth: testAuthEndpoints,
     runAll: runAllTests

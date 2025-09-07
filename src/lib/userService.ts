@@ -9,7 +9,8 @@ import type {
   UserRoleInfo, 
   UserFilters, 
   ToggleStatusResponse, 
-  DeleteUserResponse 
+  DeleteUserResponse,
+  UserRole
 } from '../types/users';
 
 // Serviço para gerenciar usuários
@@ -240,7 +241,7 @@ export class UserService {
 
   // Obter usuários por role
   static async getUsersByRole(role: string, filters: Omit<UserFilters, 'role'> = {}): Promise<UserListResponse> {
-    return this.listUsers({ ...filters, role: role as any });
+    return this.listUsers({ ...filters, role: role as UserRole });
   }
 
   // Obter usuários ativos/inativos

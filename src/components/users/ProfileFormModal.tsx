@@ -9,8 +9,13 @@ type Props = {
     onClose: () => void
     title: string
     onSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-    register: any
-    errors: any
+    register: (name: string) => {
+        name: string
+        ref: (element: HTMLInputElement | HTMLTextAreaElement | null) => void
+        onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+        onBlur: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+    }
+    errors: Record<string, { message?: string }>
     saving?: boolean
     /** NOVO: lista dentro da modal */
     profiles?: ProfileRow[]

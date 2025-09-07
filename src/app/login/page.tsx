@@ -3,7 +3,6 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthOnce } from "@/lib/useAuthOnce"
 import { Eye, EyeOff, Lock, Mail } from "lucide-react"
-import Image from "next/image"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")

@@ -62,6 +62,6 @@ export const debugAuth = {
 
 // Adiciona ao console global em desenvolvimento
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  (window as any).debugAuth = debugAuth;
+  (window as unknown as { debugAuth: typeof debugAuth }).debugAuth = debugAuth;
   console.log('🐛 Debug de autenticação disponível em: window.debugAuth');
 }

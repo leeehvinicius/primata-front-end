@@ -3,24 +3,19 @@ import { PartnerService } from './partnerService'
 import { 
   HealthPlan, 
   Agreement, 
-  AgreementDiscount, 
-  CoverageLimit, 
   Payment, 
   CoverageAlert, 
-  OperatorIntegration,
   PartnerFilters,
-  PartnerListResponse,
   PartnerStats,
   CreateHealthPlanData,
   CreateAgreementData,
   CreateDiscountData,
-  CreateCoverageLimitData,
   CreatePaymentData,
   UpdateHealthPlanData,
   UpdateAgreementData,
   UpdateDiscountData,
-  UpdateCoverageLimitData,
-  UpdatePaymentData
+  UpdatePaymentData,
+  PlanType
 } from '@/types/partners'
 
 export function usePartners() {
@@ -64,18 +59,26 @@ export function usePartners() {
       const updatedFilters = { ...defaultFilters, ...newFilters }
       const response = await PartnerService.listHealthPlans(updatedFilters)
       
-      // A API pode retornar os dados diretamente ou em uma propriedade 'data'
-      const healthPlansData = response.data || response.healthPlans || response || []
+      // A API pode retornar PartnerListResponse ou um array direto
+      const healthPlansData = Array.isArray(response)
+        ? response
+        : ((response as unknown as { data?: HealthPlan[]; healthPlans?: HealthPlan[] }).data
+          ?? (response as unknown as { data?: HealthPlan[]; healthPlans?: HealthPlan[] }).healthPlans
+          ?? [])
       setHealthPlans(Array.isArray(healthPlansData) ? healthPlansData : [])
       
-      setPagination({
-        page: response.page || 1,
-        limit: response.limit || 10,
-        total: response.total || 0,
-        totalPages: response.totalPages || 0,
-        hasNext: response.hasNext || false,
-        hasPrev: response.hasPrev || false
-      })
+      if (!Array.isArray(response)) {
+        setPagination({
+          page: response.page || 1,
+          limit: response.limit || 10,
+          total: response.total || 0,
+          totalPages: response.totalPages || 0,
+          hasNext: response.hasNext || false,
+          hasPrev: response.hasPrev || false
+        })
+      } else {
+        setPagination({ page: 1, limit: 10, total: healthPlansData.length, totalPages: 1, hasNext: false, hasPrev: false })
+      }
       setFilters(updatedFilters)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar planos de saúde')
@@ -499,18 +502,26 @@ export function usePartners() {
         search: searchTerm
       })
       
-      // A API pode retornar os dados diretamente ou em uma propriedade 'data'
-      const healthPlansData = response.data || response.healthPlans || response || []
+      // A API pode retornar PartnerListResponse ou um array direto
+      const healthPlansData = Array.isArray(response)
+        ? response
+        : ((response as unknown as { data?: HealthPlan[]; healthPlans?: HealthPlan[] }).data
+          ?? (response as unknown as { data?: HealthPlan[]; healthPlans?: HealthPlan[] }).healthPlans
+          ?? [])
       setHealthPlans(Array.isArray(healthPlansData) ? healthPlansData : [])
       
-      setPagination({
-        page: response.page || 1,
-        limit: response.limit || 10,
-        total: response.total || 0,
-        totalPages: response.totalPages || 0,
-        hasNext: response.hasNext || false,
-        hasPrev: response.hasPrev || false
-      })
+      if (!Array.isArray(response)) {
+        setPagination({
+          page: response.page || 1,
+          limit: response.limit || 10,
+          total: response.total || 0,
+          totalPages: response.totalPages || 0,
+          hasNext: response.hasNext || false,
+          hasPrev: response.hasPrev || false
+        })
+      } else {
+        setPagination({ page: 1, limit: 10, total: healthPlansData.length, totalPages: 1, hasNext: false, hasPrev: false })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao buscar planos de saúde')
       console.error('Erro ao buscar planos de saúde:', err)
@@ -522,7 +533,7 @@ export function usePartners() {
 
   // Filtrar por tipo de plano
   const filterByPlanType = useCallback(async (planType: string) => {
-    const newFilters = planType ? { planType: planType as any, page: 1 } : { planType: undefined, page: 1 }
+    const newFilters = planType ? { planType: planType as PlanType, page: 1 } : { planType: undefined, page: 1 }
     await loadHealthPlans(newFilters)
   }, [loadHealthPlans])
 
