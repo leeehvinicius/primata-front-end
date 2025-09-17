@@ -11,6 +11,11 @@ export interface Payment {
   appointmentId?: string;
   amount: number;
   discountAmount: number;
+  // Descontos e valor final (podem vir como string da API)
+  partnerDiscount?: number | string;
+  clientDiscount?: number | string;
+  finalAmount?: number | string;
+  partnerName?: string | null;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   dueDate: string;
@@ -23,6 +28,22 @@ export interface Payment {
   clientName?: string;
   serviceName?: string;
   appointmentDate?: string;
+
+  // Objetos aninhados opcionais retornados pela API
+  client?: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  service?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    currentPrice?: string | number | null;
+    duration?: number | null;
+    color?: string | null;
+  };
 }
 
 export interface PaymentListResponse {

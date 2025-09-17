@@ -14,29 +14,34 @@ const schema = z.object({
     name: z.string().min(1, "Nome do Parceiro é obrigatório"),
     documentType: z.enum(["CPF", "CNPJ"]),
     document: z.string().min(1, "Documento é obrigatório"),
-    partnerDiscount: z.number().min(0, "Mínimo 0").max(100, "Máximo 100"),
-    clientDiscount: z.number().min(0, "Mínimo 0").max(100, "Máximo 100"),
+    partnerDiscount: z.number().min(0, "Mínimo 0"),
+    clientDiscount: z.number().min(0, "Mínimo 0"),
+    fixedDiscount: z.number().min(0, "Mínimo 0").optional(),
     notes: z.string().optional(),
     isActive: z.boolean()
 })
 
 type FormData = z.infer<typeof schema>
 
-type HealthPlanRow = {
+type PartnerRow = {
     id: string
     name: string
-    planType: "individual" | "familiar" | "empresarial"
-    operatorCode: string
+    documentType: "CPF" | "CNPJ"
+    document: string
+    partnerDiscount: number
+    clientDiscount: number
+    fixedDiscount?: number
+    notes?: string
     isActive: boolean
 }
 
 export default function PartnersPage() {
     // Removido: router não utilizado
-    const [partners, setPartners] = useState<HealthPlanRow[]>([])
+    const [partners, setPartners] = useState<PartnerRow[]>([])
     const [loading, setLoading] = useState<boolean>(true)
     const [modalOpen, setModalOpen] = useState<boolean>(false)
-    const [editing, setEditing] = useState<HealthPlanRow | null>(null)
-    const [partnerToDelete, setPartnerToDelete] = useState<HealthPlanRow | null>(null)
+    const [editing, setEditing] = useState<PartnerRow | null>(null)
+    const [partnerToDelete, setPartnerToDelete] = useState<PartnerRow | null>(null)
 
     const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
         resolver: zodResolver(schema),
@@ -46,6 +51,7 @@ export default function PartnersPage() {
             document: "",
             partnerDiscount: 0,
             clientDiscount: 0,
+            fixedDiscount: 0,
             notes: "",
             isActive: true
         }
@@ -54,9 +60,11 @@ export default function PartnersPage() {
     async function loadPartners() {
         try {
             setLoading(true)
-            const response = await api.get<{ data: HealthPlanRow[] }>("/agreements/health-plans")
-            const list: HealthPlanRow[] = Array.isArray(response?.data) ? response.data : []
-            setPartners(list)
+            const response = await api.get<unknown>("/partners")
+            const list = Array.isArray(response)
+                ? response
+                : (Array.isArray((response as any)?.partners) ? (response as any).partners : (Array.isArray((response as any)?.data) ? (response as any).data : []))
+            setPartners((list as PartnerRow[]) || [])
         } catch (error: unknown) {
             toast.error((error as Error)?.message || "Erro ao carregar parceiros")
         } finally {
@@ -82,15 +90,16 @@ export default function PartnersPage() {
         setModalOpen(true)
     }
 
-    function openEditModal(item: HealthPlanRow) {
+    function openEditModal(item: PartnerRow) {
         setEditing(item)
         reset({
             name: item.name,
-            documentType: "CPF",
-            document: item.operatorCode || "",
-            partnerDiscount: 0,
-            clientDiscount: 0,
-            notes: "",
+            documentType: item.documentType,
+            document: item.document,
+            partnerDiscount: item.partnerDiscount,
+            clientDiscount: item.clientDiscount,
+            fixedDiscount: item.fixedDiscount || 0,
+            notes: item.notes || "",
             isActive: item.isActive
         })
         setModalOpen(true)
@@ -99,18 +108,26 @@ export default function PartnersPage() {
     async function onSubmit(data: FormData) {
         try {
             if (editing) {
-                await api.put(`/agreements/health-plans/${editing.id}`, {
+                await api.put(`/partners/${editing.id}`, {
                     name: data.name,
-                    planType: "individual",
-                    operatorCode: data.document,
+                    documentType: data.documentType,
+                    document: data.document,
+                    partnerDiscount: data.partnerDiscount,
+                    clientDiscount: data.clientDiscount,
+                    fixedDiscount: data.fixedDiscount ?? 0,
+                    notes: data.notes || undefined,
                     isActive: data.isActive
                 })
                 toast.success("Parceiro atualizado com sucesso")
             } else {
-                await api.post("/agreements/health-plans", {
+                await api.post("/partners", {
                     name: data.name,
-                    planType: "individual",
-                    operatorCode: data.document,
+                    documentType: data.documentType,
+                    document: data.document,
+                    partnerDiscount: data.partnerDiscount,
+                    clientDiscount: data.clientDiscount,
+                    fixedDiscount: data.fixedDiscount ?? 0,
+                    notes: data.notes || undefined,
                     isActive: data.isActive
                 })
                 toast.success("Parceiro criado com sucesso")
@@ -124,7 +141,7 @@ export default function PartnersPage() {
 
     async function onDelete(id: string) {
         try {
-            await api.delete(`/agreements/health-plans/${id}`)
+            await api.delete(`/partners/${id}`)
             toast.success("Parceiro excluído")
             await loadPartners()
         } catch (error: unknown) {
@@ -159,6 +176,7 @@ export default function PartnersPage() {
                                     <th className="py-3 pr-4 font-medium">Nome</th>
                                     <th className="py-3 pr-4 font-medium">Documento</th>
                                     <th className="py-3 pr-4 font-medium">Descontos</th>
+                                    <th className="py-3 pr-4 font-medium">Desconto Fixo</th>
                                     <th className="py-3 pr-4 font-medium">Status</th>
                                     <th className="py-3 pr-0 font-medium">Ações</th>
                                 </tr>
@@ -170,11 +188,14 @@ export default function PartnersPage() {
                                             <div className="font-medium text-gray-900">{p.name}</div>
                                         </td>
                                         <td className="py-4 pr-4">
-                                            <div className="text-gray-900">{p.operatorCode}</div>
+                                            <div className="text-gray-900">{p.documentType} • {p.document}</div>
                                         </td>
                                         <td className="py-4 pr-4">
-                                            <div className="text-sm text-gray-700">Parceiro: <span className="font-medium">0.00%</span></div>
-                                            <div className="text-sm text-gray-700">Cliente: <span className="font-medium">0.00%</span></div>
+                                            <div className="text-sm text-gray-700">Parceiro: <span className="font-medium">{Number(p.partnerDiscount).toFixed(2)}%</span></div>
+                                            <div className="text-sm text-gray-700">Cliente: <span className="font-medium">{Number(p.clientDiscount).toFixed(2)}%</span></div>
+                                        </td>
+                                        <td className="py-4 pr-4">
+                                            <div className="text-sm text-gray-700">{Number(p.fixedDiscount || 0).toFixed(2)}</div>
                                         </td>
                                         <td className="py-4 pr-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${p.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
@@ -268,7 +289,6 @@ export default function PartnersPage() {
                                 type="number"
                                 step="0.01"
                                 min={0}
-                                max={100}
                                 placeholder="0.00"
                                 className="input"
                                 {...register("partnerDiscount", { valueAsNumber: true })}
@@ -281,12 +301,23 @@ export default function PartnersPage() {
                                 type="number"
                                 step="0.01"
                                 min={0}
-                                max={100}
                                 placeholder="0.00"
                                 className="input"
                                 {...register("clientDiscount", { valueAsNumber: true })}
                             />
                             {errors.clientDiscount && <p className="mt-1 text-sm text-red-600">{errors.clientDiscount.message}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-2">Desconto Fixo (R$)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min={0}
+                                placeholder="0.00"
+                                className="input"
+                                {...register("fixedDiscount", { valueAsNumber: true })}
+                            />
+                            {errors.fixedDiscount && <p className="mt-1 text-sm text-red-600">{errors.fixedDiscount.message}</p>}
                         </div>
                     </div>
 

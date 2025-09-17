@@ -25,7 +25,10 @@ import {
   UpdateIntegrationData,
   HealthPlanReport,
   ClientReport,
-  CoverageDetails
+  CoverageDetails,
+  Partner,
+  CreatePartnerData,
+  UpdatePartnerData
 } from '@/types/partners'
 
 export class PartnerService {
@@ -35,6 +38,65 @@ export class PartnerService {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     }
+  }
+
+  // ===== PARCEIROS =====
+  static async listPartners(search?: string): Promise<{ partners: Partner[] }> {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : ''
+    const response = await fetch(`${config.apiUrl}/partners${qs}`, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`Erro ao listar parceiros: ${response.status}`)
+    }
+    return response.json()
+  }
+
+  static async getPartner(id: string): Promise<Partner> {
+    const response = await fetch(`${config.apiUrl}/partners/${id}`, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`Erro ao buscar parceiro: ${response.status}`)
+    }
+    return response.json()
+  }
+
+  static async createPartner(data: CreatePartnerData): Promise<Partner> {
+    const response = await fetch(`${config.apiUrl}/partners`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) {
+      throw new Error(`Erro ao criar parceiro: ${response.status}`)
+    }
+    return response.json()
+  }
+
+  static async updatePartner(id: string, data: UpdatePartnerData): Promise<Partner> {
+    const response = await fetch(`${config.apiUrl}/partners/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    })
+    if (!response.ok) {
+      throw new Error(`Erro ao atualizar parceiro: ${response.status}`)
+    }
+    return response.json()
+  }
+
+  static async deletePartner(id: string): Promise<{ message: string }> {
+    const response = await fetch(`${config.apiUrl}/partners/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`Erro ao deletar parceiro: ${response.status}`)
+    }
+    return response.json()
   }
 
   // ===== PLANOS DE SAÚDE =====

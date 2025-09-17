@@ -1,4 +1,41 @@
 // Tipos para parceiros e convênios
+export type DocumentType = 'CPF' | 'CNPJ'
+
+export interface Partner {
+  id: string
+  name: string
+  documentType: DocumentType
+  document: string
+  partnerDiscount: number
+  clientDiscount: number
+  fixedDiscount?: number
+  notes?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreatePartnerData {
+  name: string
+  documentType: DocumentType
+  document: string
+  partnerDiscount: number
+  clientDiscount: number
+  fixedDiscount?: number
+  notes?: string
+  isActive?: boolean
+}
+
+export interface UpdatePartnerData {
+  name?: string
+  documentType?: DocumentType
+  document?: string
+  partnerDiscount?: number
+  clientDiscount?: number
+  fixedDiscount?: number
+  notes?: string
+  isActive?: boolean
+}
 export enum PlanType {
   INDIVIDUAL = 'individual',
   FAMILIAR = 'familiar',

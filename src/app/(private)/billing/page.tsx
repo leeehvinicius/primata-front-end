@@ -24,6 +24,18 @@ function startOfWeek(d: Date) { const x = new Date(d); const diff = (x.getDay() 
 function endOfWeek(d: Date) { const s = startOfWeek(d); const x = new Date(s); x.setDate(s.getDate() + 6); x.setHours(23, 59, 59, 999); return x }
 function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1) }
 function endOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999) }
+function hexToRgba(hex?: string | null, alpha: number = 1) {
+    if (!hex) return undefined
+    let h = hex.replace('#', '')
+    if (h.length === 3) {
+        h = h.split('').map(c => c + c).join('')
+    }
+    const num = parseInt(h, 16)
+    const r = (num >> 16) & 255
+    const g = (num >> 8) & 255
+    const b = num & 255
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 // ===== UI bits =====
 function StatBox({ title, count, total, method }: { title: string; count: number; total: number; method: PaymentMethod }) {
@@ -39,20 +51,86 @@ function StatBox({ title, count, total, method }: { title: string; count: number
     )
 }
 
+function DiscountStatBox({ title, amount, subtitle, color }: { title: string; amount: number; subtitle?: string; color: 'amber' | 'cyan' }) {
+    const palette = color === 'amber'
+        ? { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800' }
+        : { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-800' }
+    return (
+        <div className={`rounded-2xl p-4 border ${palette.border} ${palette.bg}`}>
+            <div className="text-xs text-gray-600">{title}</div>
+            <div className="mt-1 flex items-baseline justify-between">
+                <div className={`text-3xl font-bold ${palette.text}`}>{BRL.format(amount)}</div>
+            </div>
+            {subtitle && (
+                <div className="mt-1 text-[11px] text-gray-600 truncate" title={subtitle}>{subtitle}</div>
+            )}
+        </div>
+    )
+}
+
 function TabelaServico({ titulo, dados }: { titulo: string; dados: Payment[] }) {
     const cores = coresPorServico[titulo] ?? {
         bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-800',
         chipBg: 'bg-slate-100', chipText: 'text-slate-700', headBg: 'bg-slate-100'
     }
+    const serviceColor = dados[0]?.service?.color || null
+    const resumo = React.useMemo(() => {
+        let totalBruto = 0
+        let descParceiro = 0
+        let descCliente = 0
+        let totalLiquido = 0
+
+        dados.forEach(item => {
+            const original = Number(item.amount || 0)
+            const dParc = Number(item.partnerDiscount || 0)
+            const dCli = Number(item.clientDiscount || 0)
+            const finalCalc = item.finalAmount !== undefined ? Number(item.finalAmount) : (original - dParc - dCli)
+
+            totalBruto += original
+            descParceiro += dParc
+            descCliente += dCli
+            totalLiquido += finalCalc
+        })
+
+        return { totalBruto, descParceiro, descCliente, totalLiquido }
+    }, [dados])
     return (
-        <div className={`rounded-2xl border ${cores.border} ${cores.bg} backdrop-blur-sm`}>
+        <div
+            className={`rounded-2xl border backdrop-blur-sm ${serviceColor ? '' : `${cores.border} ${cores.bg}`}`}
+            style={serviceColor ? { backgroundColor: hexToRgba(serviceColor, 0.06), borderColor: hexToRgba(serviceColor, 0.25) } : undefined}
+        >
             <div className="flex items-center justify-between p-4">
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${cores.chipBg} ${cores.chipText}`}>{titulo}</div>
+                <div
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${serviceColor ? '' : `${cores.chipBg} ${cores.chipText}`}`}
+                    style={serviceColor ? { backgroundColor: hexToRgba(serviceColor, 0.15), color: '#0f172a' } : undefined}
+                >
+                    <span className="inline-flex items-center gap-2">
+                        {serviceColor && <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: serviceColor || undefined }} />}
+                        <span>{titulo}</span>
+                    </span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-slate-100 text-slate-700">
+                        Bruto: {BRL.format(resumo.totalBruto)}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-amber-100 text-amber-700">
+                        Desc. parceiro: {BRL.format(resumo.descParceiro)}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-cyan-100 text-cyan-700">
+                        Desc. cliente: {BRL.format(resumo.descCliente)}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-emerald-100 text-emerald-700 font-semibold">
+                        Líquido: {BRL.format(resumo.totalLiquido)}
+                    </span>
+                </div>
             </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
                     <thead>
-                        <tr className={`text-left text-gray-700 ${cores.headBg}`}>
+                        <tr
+                            className={`text-left text-gray-700 ${serviceColor ? '' : cores.headBg}`}
+                            style={serviceColor ? { backgroundColor: hexToRgba(serviceColor, 0.12) } : undefined}
+                        >
                             <th className="px-4 py-2 font-semibold">Cliente</th>
                             <th className="px-4 py-2 font-semibold">Serviço</th>
                             <th className="px-4 py-2 font-semibold">Status</th>
@@ -61,23 +139,59 @@ function TabelaServico({ titulo, dados }: { titulo: string; dados: Payment[] }) 
                         </tr>
                     </thead>
                     <tbody>
-                        {dados.map((item, i) => (
-                            <tr key={item.id} className={`border-t border-gray-100 ${i % 2 ? 'bg-gray-50' : ''}`}>
-                                <td className="px-4 py-2 whitespace-nowrap text-gray-900">{item.clientId}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-gray-800">{item.serviceId}</td>
-                                <td className="px-4 py-2 whitespace-nowrap">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs ${PAYMENT_STATUS_COLORS[item.paymentStatus].bg} ${PAYMENT_STATUS_COLORS[item.paymentStatus].text}`}>
-                                        {PAYMENT_STATUS_LABELS[item.paymentStatus]}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-2 whitespace-nowrap">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs ${PAYMENT_METHOD_COLORS[item.paymentMethod].bg} ${PAYMENT_METHOD_COLORS[item.paymentMethod].text}`}>
-                                        {PAYMENT_METHOD_LABELS[item.paymentMethod]}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-2 whitespace-nowrap text-right text-gray-900">{BRL.format(item.amount)}</td>
-                            </tr>
-                        ))}
+                        {dados.map((item, i) => {
+                            const partnerDisc = Number(item.partnerDiscount || 0)
+                            const clientDisc = Number(item.clientDiscount || 0)
+                            const originalAmount = Number(item.amount)
+                            const finalAmount = item.finalAmount !== undefined ? Number(item.finalAmount) : (originalAmount - partnerDisc - clientDisc)
+                            const hasDiscount = (partnerDisc > 0) || (clientDisc > 0)
+
+                            return (
+                                <tr key={item.id} className={`border-t border-gray-100 ${i % 2 ? 'bg-gray-50' : ''}`}>
+                                    <td className="px-4 py-2 whitespace-nowrap text-gray-900">{item.client?.name || item.clientName || item.clientId}</td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-gray-800">
+                                        <span className="inline-flex items-center gap-2">
+                                            {item.service?.color && (
+                                                <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.service.color || undefined }} />
+                                            )}
+                                            <span>{item.service?.name || item.serviceName || item.serviceId}</span>
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs ${PAYMENT_STATUS_COLORS[item.paymentStatus].bg} ${PAYMENT_STATUS_COLORS[item.paymentStatus].text}`}>
+                                            {PAYMENT_STATUS_LABELS[item.paymentStatus]}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs ${PAYMENT_METHOD_COLORS[item.paymentMethod].bg} ${PAYMENT_METHOD_COLORS[item.paymentMethod].text}`}>
+                                                {PAYMENT_METHOD_LABELS[item.paymentMethod]}
+                                            </span>
+                                            {partnerDisc > 0 && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-amber-100 text-amber-700">
+                                                    Desc. parceiro: {BRL.format(partnerDisc)}
+                                                </span>
+                                            )}
+                                            {clientDisc > 0 && (
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-cyan-100 text-cyan-700">
+                                                    Desc. cliente: {BRL.format(clientDisc)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-right text-gray-900">
+                                        {hasDiscount ? (
+                                            <div className="flex flex-col items-end leading-tight">
+                                                <span className="text-gray-500 line-through text-xs">{BRL.format(originalAmount)}</span>
+                                                <span className="font-semibold text-gray-900">{BRL.format(finalAmount)}</span>
+                                            </div>
+                                        ) : (
+                                            BRL.format(originalAmount)
+                                        )}
+                                    </td>
+                                </tr>
+                            )
+                        })}
                         {!dados.length && (
                             <tr><td colSpan={5} className="px-4 py-6 text-center text-gray-500">Sem lançamentos neste serviço</td></tr>
                         )}
@@ -148,25 +262,43 @@ export default function BillingPage() {
         }
     }, [from, to, range, applyFilters])
 
-    // Agrupar pagamentos por serviço (simulado - você pode ajustar conforme sua API)
+    // Agrupar pagamentos por serviço (real)
     const porServico = useMemo(() => {
-        const map: Record<string, Payment[]> = {
-            'Câmara Hiperbárica': [],
-            'Drenagem Pós-Cirurgia': [],
-            'Hingetáveis': [],
-            'Nutricionista': []
-        }
-        
-        // Simular agrupamento por serviço - ajuste conforme sua lógica de negócio
+        const map: Record<string, Payment[]> = {}
+
         payments.forEach(payment => {
-            // Aqui você pode implementar a lógica real de agrupamento
-            // Por enquanto, vamos distribuir aleatoriamente
-            const services = Object.keys(map)
-            const randomService = services[Math.floor(Math.random() * services.length)]
-            map[randomService].push(payment)
+            const serviceKey = payment.service?.name || payment.serviceName || payment.serviceId || 'Sem serviço'
+            if (!map[serviceKey]) map[serviceKey] = []
+            map[serviceKey].push(payment)
         })
-        
+
         return map
+    }, [payments])
+
+    // Totais de descontos e parceiro destaque
+    const descontosResumo = useMemo(() => {
+        let totalParceiro = 0
+        let totalCliente = 0
+        const porParceiro: Record<string, number> = {}
+
+        payments.forEach(p => {
+            const dParc = Number(p.partnerDiscount || 0)
+            const dCli = Number(p.clientDiscount || 0)
+            totalParceiro += dParc
+            totalCliente += dCli
+            const nome = p.partnerName || '—'
+            if (dParc > 0) {
+                porParceiro[nome] = (porParceiro[nome] || 0) + dParc
+            }
+        })
+
+        let topPartner: string | null = null
+        let topValue = 0
+        Object.entries(porParceiro).forEach(([nome, valor]) => {
+            if (valor > topValue) { topValue = valor; topPartner = nome }
+        })
+
+        return { totalParceiro, totalCliente, topPartner, topValue }
     }, [payments])
 
     // Loading state
@@ -236,6 +368,21 @@ export default function BillingPage() {
                         />
                     )
                 })}
+            </div>
+
+            {/* Descontos: Cliente e Parceiro */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                <DiscountStatBox 
+                    title="Desc. Cliente"
+                    amount={descontosResumo.totalCliente}
+                    color="cyan"
+                />
+                <DiscountStatBox 
+                    title="Desc. Parceiro"
+                    amount={descontosResumo.totalParceiro}
+                    subtitle={descontosResumo.topPartner ? `Maior: ${descontosResumo.topPartner} (${BRL.format(descontosResumo.topValue)})` : undefined}
+                    color="amber"
+                />
             </div>
 
             {/* Tabelas por serviço */}
