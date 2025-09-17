@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthOnce } from '@/lib/useAuthOnce'
-import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2 } from 'lucide-react'
+import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock } from 'lucide-react'
 import { useState } from 'react'
 
 const items = [
@@ -11,6 +11,7 @@ const items = [
     { href: '/billing', label: 'Financeiro', icon: CreditCard, description: 'Controle' },
     { href: '/services', label: 'Serviços', icon: Scissors, description: 'Catálogo' },
     { href: '/partners', label: 'Parceiros', icon: Building2, description: 'Convênios' },
+    { href: '/time-tracking', label: 'Ponto', icon: Clock, description: 'Registro de ponto' },
 ]
 
 
