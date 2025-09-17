@@ -23,13 +23,14 @@ export default function RegisterTimeTrackingPage() {
         photoData,
         deviceInfo: typeof window !== 'undefined' ? {
           userAgent: navigator.userAgent,
-          platform: (navigator as any).platform,
+          platform: (navigator as unknown as { platform?: string }).platform,
         } : undefined,
       }
       await TimeTrackingService.register(payload)
       router.push('/time-tracking')
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao registrar ponto')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Falha ao registrar ponto'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -42,7 +43,7 @@ export default function RegisterTimeTrackingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium mb-1">Tipo</label>
-            <select value={type as any} onChange={(e) => setType(e.target.value as TimeTrackingType)} className="border rounded-md p-2 text-sm w-full">
+            <select value={type} onChange={(e) => setType(e.target.value as TimeTrackingType)} className="border rounded-md p-2 text-sm w-full">
               <option value="CHECK_IN">CHECK_IN</option>
               <option value="CHECK_OUT">CHECK_OUT</option>
             </select>

@@ -61,9 +61,14 @@ export default function PartnersPage() {
         try {
             setLoading(true)
             const response = await api.get<unknown>("/partners")
-            const list = Array.isArray(response)
-                ? response
-                : (Array.isArray((response as any)?.partners) ? (response as any).partners : (Array.isArray((response as any)?.data) ? (response as any).data : []))
+            let list: unknown[] = []
+            if (Array.isArray(response)) {
+                list = response
+            } else if (response && typeof response === 'object') {
+                const obj = response as { partners?: unknown[]; data?: unknown[] }
+                if (Array.isArray(obj.partners)) list = obj.partners
+                else if (Array.isArray(obj.data)) list = obj.data
+            }
             setPartners((list as PartnerRow[]) || [])
         } catch (error: unknown) {
             toast.error((error as Error)?.message || "Erro ao carregar parceiros")

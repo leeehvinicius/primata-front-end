@@ -14,15 +14,16 @@ export default function TimeTrackingDetailPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [reason, setReason] = useState('')
 
-  const load = async () => {
+  const load = async (): Promise<void> => {
     if (!id) return
     setLoading(true)
     setError(null)
     try {
       const data = await TimeTrackingService.getById(id)
       setRecord(data)
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao carregar registro')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erro ao carregar registro'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -33,7 +34,7 @@ export default function TimeTrackingDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  const handleValidate = async (action: ValidationAction) => {
+  const handleValidate = async (action: ValidationAction): Promise<void> => {
     if (!id) return
     setActionLoading(true)
     setError(null)
@@ -41,8 +42,9 @@ export default function TimeTrackingDetailPage() {
       const payload: ValidateTimeTrackingDto = { timeTrackingId: id, action, reason }
       await TimeTrackingService.validate(payload)
       await load()
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao validar')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Falha ao validar'
+      setError(message)
     } finally {
       setActionLoading(false)
     }
@@ -72,6 +74,7 @@ export default function TimeTrackingDetailPage() {
           <div className="md:col-span-2">
             <span className="text-gray-500">Foto:</span>
             <div className="mt-2">
+              {/* Using img intentionally; backend photo URLs may be external. Consider next/image if domains are configured. */}
               <img src={record.photoUrl} alt="Foto do registro" className="max-h-64 rounded border" />
             </div>
           </div>

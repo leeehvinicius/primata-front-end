@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TimeTrackingService } from '@/lib/timeTrackingService'
 import type { GenerateTimeTrackingReportDto, TimeTrackingReportListResponse } from '@/types/timeTracking'
 
@@ -7,26 +7,27 @@ export default function TimeTrackingReportsPage() {
   const [list, setList] = useState<TimeTrackingReportListResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<{ userId?: string; status?: string; startDate?: string; endDate?: string }>({})
+  const [filters] = useState<{ userId?: string; status?: string; startDate?: string; endDate?: string }>({})
   const [form, setForm] = useState<GenerateTimeTrackingReportDto>({ userId: '', periodStart: '', periodEnd: '' })
   const [generating, setGenerating] = useState(false)
 
-  const load = async () => {
+  const load = useCallback(async (): Promise<void> => {
     setLoading(true)
     setError(null)
     try {
       const response = await TimeTrackingService.listReports(filters)
       setList(response)
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao listar relatórios')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erro ao listar relatórios'
+      setError(message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters])
 
-  useEffect(() => { load() }, [filters])
+  useEffect(() => { load() }, [load])
 
-  const handleGenerate = async (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
     setGenerating(true)
     setError(null)
@@ -34,8 +35,9 @@ export default function TimeTrackingReportsPage() {
       await TimeTrackingService.generateReport(form)
       setForm({ userId: '', periodStart: '', periodEnd: '' })
       await load()
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao gerar relatório')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Falha ao gerar relatório'
+      setError(message)
     } finally {
       setGenerating(false)
     }

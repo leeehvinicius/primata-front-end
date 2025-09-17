@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { TimeTrackingService } from '@/lib/timeTrackingService'
-import type { TimeTrackingListResponse, TimeTrackingQueryDto, TimeTrackingType, TimeTrackingStatus } from '@/types/timeTracking'
+import type { TimeTrackingListResponse, TimeTrackingQueryDto } from '@/types/timeTracking'
 import Link from 'next/link'
 
 export default function TimeTrackingListPage() {
@@ -18,8 +18,9 @@ export default function TimeTrackingListPage() {
     try {
       const response = await TimeTrackingService.list(filters)
       setData(response)
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao carregar registros')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erro ao carregar registros'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -48,12 +49,12 @@ export default function TimeTrackingListPage() {
 
       {/* Filtros */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-lg border">
-        <select name="type" value={filters.type as any || ''} onChange={handleChange} className="border rounded-md p-2 text-sm">
+        <select name="type" value={filters.type ?? ''} onChange={handleChange} className="border rounded-md p-2 text-sm">
           <option value="">Tipo</option>
           <option value="CHECK_IN">CHECK_IN</option>
           <option value="CHECK_OUT">CHECK_OUT</option>
         </select>
-        <select name="status" value={filters.status as any || ''} onChange={handleChange} className="border rounded-md p-2 text-sm">
+        <select name="status" value={filters.status ?? ''} onChange={handleChange} className="border rounded-md p-2 text-sm">
           <option value="">Status</option>
           <option value="PENDING">PENDENTE</option>
           <option value="APPROVED">APROVADO</option>

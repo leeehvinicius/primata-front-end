@@ -28,50 +28,76 @@ export class TimeTrackingService {
       }
     })
     const qs = searchParams.toString()
-    const raw = await api.get<any>(`/time-tracking${qs ? `?${qs}` : ''}`)
+    const raw = await api.get<unknown>(`/time-tracking${qs ? `?${qs}` : ''}`)
 
     // Adapter: support both { items, pagination } and { data, total, page, limit }
-    if (raw && Array.isArray(raw.items)) {
+    if (raw && typeof raw === 'object' && Array.isArray((raw as { items?: unknown[] }).items)) {
       return raw as TimeTrackingListResponse
     }
 
-    const dataArray = Array.isArray(raw?.data) ? raw.data : []
-    const page = Number(raw?.page) || params.page || 1
-    const limit = Number(raw?.limit) || params.limit || 10
-    const total = Number(raw?.total) || dataArray.length
+    const obj = (raw ?? {}) as { data?: unknown[]; page?: number; limit?: number; total?: number }
+    const dataArray = Array.isArray(obj.data) ? obj.data : []
+    const page = Number(obj.page) || params.page || 1
+    const limit = Number(obj.limit) || params.limit || 10
+    const total = Number(obj.total) || dataArray.length
     const totalPages = Math.max(1, Math.ceil(total / limit))
 
-    const items = dataArray.map((r: any) => ({
-      id: r.id,
-      type: r.type as any,
-      status: r.status as any,
-      timestamp: r.timestamp || r.createdAt,
-    }))
+    const items = dataArray.map((rUnknown) => {
+      const r = rUnknown as { id: string; type: string; status: string; timestamp?: string; createdAt?: string }
+      return {
+        id: r.id,
+        type: r.type as unknown as TimeTrackingRecord['type'],
+        status: r.status as unknown as TimeTrackingRecord['status'],
+        timestamp: r.timestamp || r.createdAt || new Date().toISOString(),
+      }
+    })
 
     return { items, pagination: { page, limit, total, totalPages } }
   }
 
   static async getById(id: string): Promise<TimeTrackingRecord> {
-    const r = await api.get<any>(`/time-tracking/${id}`)
+    const r = await api.get<unknown>(`/time-tracking/${id}`)
+    const rr = r as {
+      id: string
+      type?: string
+      status?: string
+      timestamp?: string
+      createdAt?: string
+      latitude?: number | string
+      longitude?: number | string
+      accuracy?: number | string
+      userId?: string
+      cpf?: string
+      address?: string
+      city?: string
+      state?: string
+      country?: string
+      photoUrl?: string
+      notes?: string
+      user?: { id: string; name?: string }
+    } | null
+    if (!rr) {
+      throw new Error('Registro não encontrado')
+    }
     // If already in expected shape
-    if (r && r.id && r.type && r.status && r.timestamp) {
-      return r as TimeTrackingRecord
+    if (rr.id && rr.type && rr.status && (rr.timestamp || rr.createdAt)) {
+      return rr as TimeTrackingRecord
     }
     // Adapter from flat fields
-    const latitude = r?.latitude != null ? Number(r.latitude) : undefined
-    const longitude = r?.longitude != null ? Number(r.longitude) : undefined
-    const accuracy = r?.accuracy != null ? Number(r.accuracy) : undefined
+    const latitude = rr?.latitude != null ? Number(rr.latitude) : undefined
+    const longitude = rr?.longitude != null ? Number(rr.longitude) : undefined
+    const accuracy = rr?.accuracy != null ? Number(rr.accuracy) : undefined
     return {
-      id: r.id,
-      userId: r.userId,
-      cpf: r.cpf,
-      user: r.user ? { id: r.user.id, name: r.user.name } : undefined,
-      type: r.type as any,
-      status: r.status as any,
-      timestamp: r.timestamp || r.createdAt,
-      location: latitude != null && longitude != null ? { latitude, longitude, accuracy, address: r.address, city: r.city, state: r.state, country: r.country } : undefined,
-      photoUrl: r.photoUrl || undefined,
-      notes: r.notes || undefined,
+      id: rr.id,
+      userId: rr.userId,
+      cpf: rr.cpf,
+      user: rr.user ? { id: rr.user.id, name: rr.user.name } : undefined,
+      type: rr.type as unknown as TimeTrackingRecord['type'],
+      status: rr.status as unknown as TimeTrackingRecord['status'],
+      timestamp: rr.timestamp || rr.createdAt || new Date().toISOString(),
+      location: latitude != null && longitude != null ? { latitude, longitude, accuracy, address: rr.address, city: rr.city, state: rr.state, country: rr.country } : undefined,
+      photoUrl: rr.photoUrl || undefined,
+      notes: rr.notes || undefined,
     }
   }
 

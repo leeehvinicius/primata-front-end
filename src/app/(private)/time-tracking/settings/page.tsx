@@ -10,14 +10,15 @@ export default function MyTimeTrackingSettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  const load = async () => {
+  const load = async (): Promise<void> => {
     setLoading(true)
     setError(null)
     try {
       const s = await TimeTrackingService.getMySettings()
       setSettings(s || {})
-    } catch (e: any) {
-      setError(e?.message || 'Erro ao carregar configurações')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erro ao carregar configurações'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -30,15 +31,16 @@ export default function MyTimeTrackingSettingsPage() {
     setSettings(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     setSaving(true)
     setError(null)
     setSuccess(null)
     try {
       await TimeTrackingService.updateMySettings(settings)
       setSuccess('Configurações atualizadas com sucesso')
-    } catch (e: any) {
-      setError(e?.message || 'Falha ao salvar')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Falha ao salvar'
+      setError(message)
     } finally {
       setSaving(false)
     }
