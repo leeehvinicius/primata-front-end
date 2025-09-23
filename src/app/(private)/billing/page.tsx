@@ -207,6 +207,7 @@ export default function BillingPage() {
     const [range, setRange] = useState<RangeKey>('today')
     const [from, setFrom] = useState('')
     const [to, setTo] = useState('')
+    const [reportMode, setReportMode] = useState<'COMMISSION' | 'WORKS'>('COMMISSION')
 
     // Hook para dados financeiros
     const { 
@@ -301,6 +302,41 @@ export default function BillingPage() {
         return { totalParceiro, totalCliente, topPartner, topValue }
     }, [payments])
 
+    // ===== Relatório de repasse por parceiro =====
+    const repassePorParceiro = useMemo(() => {
+        const mapa: Record<string, { total: number; quantidade: number }> = {}
+        payments.forEach(p => {
+            const nome = p.partnerName || '—'
+            const valorTrabalho = (p.finalAmount !== undefined ? Number(p.finalAmount) : Number(p.amount)) || 0
+            const valorComissao = Number(p.partnerDiscount || 0)
+            const valor = reportMode === 'COMMISSION' ? valorComissao : valorTrabalho
+            if (!mapa[nome]) mapa[nome] = { total: 0, quantidade: 0 }
+            mapa[nome].total += valor
+            mapa[nome].quantidade += 1
+        })
+        return mapa
+    }, [payments, reportMode])
+
+    const totalRepasse = useMemo(() => Object.values(repassePorParceiro).reduce((acc, cur) => acc + cur.total, 0), [repassePorParceiro])
+
+    const exportarCSVRepasse = () => {
+        const linhas = [['Parceiro', 'Quantidade', reportMode === 'COMMISSION' ? 'Total Comissão (BRL)' : 'Total Trabalhos (BRL)']]
+        Object.entries(repassePorParceiro).forEach(([parceiro, info]) => {
+            linhas.push([parceiro, String(info.quantidade), String(info.total.toFixed(2))])
+        })
+        linhas.push(['TOTAL', '', String(totalRepasse.toFixed(2))])
+        const csv = linhas.map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n')
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = reportMode === 'COMMISSION' ? 'repasse_parceiros_comissao.csv' : 'repasse_parceiros_trabalhos.csv'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+    }
+
     // Loading state
     if (loading && payments.length === 0) {
         return (
@@ -383,6 +419,58 @@ export default function BillingPage() {
                     subtitle={descontosResumo.topPartner ? `Maior: ${descontosResumo.topPartner} (${BRL.format(descontosResumo.topValue)})` : undefined}
                     color="amber"
                 />
+            </div>
+
+            {/* Relatório: Repasse aos parceiros */}
+            <div className="rounded-2xl border border-gray-200 bg-white">
+                <div className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-lg font-semibold text-gray-900">Relatório de repasse aos parceiros</h2>
+                        <select
+                            className="h-9 rounded-md border border-gray-300 text-sm px-2"
+                            value={reportMode}
+                            onChange={e => setReportMode(e.target.value as 'COMMISSION' | 'WORKS')}
+                        >
+                            <option value="COMMISSION">Comissão (descontos do parceiro)</option>
+                            <option value="WORKS">Trabalhos realizados (valor dos serviços)</option>
+                        </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={exportarCSVRepasse} className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50">Exportar CSV</button>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead>
+                            <tr className="text-left bg-gray-50 text-gray-700">
+                                <th className="px-4 py-2 font-semibold">Parceiro</th>
+                                <th className="px-4 py-2 font-semibold">Quantidade</th>
+                                <th className="px-4 py-2 font-semibold text-right">{reportMode === 'COMMISSION' ? 'Total Comissão' : 'Total Trabalhos'}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.entries(repassePorParceiro).map(([parceiro, info], idx) => (
+                                <tr key={parceiro} className={`border-t border-gray-100 ${idx % 2 ? 'bg-gray-50' : ''}`}>
+                                    <td className="px-4 py-2 whitespace-nowrap text-gray-900">{parceiro}</td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-gray-800">{info.quantidade}</td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-right font-medium">{BRL.format(info.total)}</td>
+                                </tr>
+                            ))}
+                            {Object.keys(repassePorParceiro).length === 0 && (
+                                <tr><td colSpan={3} className="px-4 py-6 text-center text-gray-500">Sem dados para o período selecionado</td></tr>
+                            )}
+                        </tbody>
+                        {Object.keys(repassePorParceiro).length > 0 && (
+                            <tfoot>
+                                <tr className="border-t">
+                                    <td className="px-4 py-2 font-semibold">TOTAL</td>
+                                    <td className="px-4 py-2" />
+                                    <td className="px-4 py-2 text-right font-semibold">{BRL.format(totalRepasse)}</td>
+                                </tr>
+                            </tfoot>
+                        )}
+                    </table>
+                </div>
             </div>
 
             {/* Tabelas por serviço */}

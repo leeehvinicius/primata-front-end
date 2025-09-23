@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, Resolver, SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -21,13 +21,14 @@ import {
     Package,
     AlertTriangle
 } from "lucide-react"
-import { ServiceCategory, categoryConfig, ServiceListItem, Service } from "@/types/services"
+import { ServiceListItem, Service } from "@/types/services"
+import { ServiceService } from "@/lib/serviceService"
 
 // ===== Schemas de Validação =====
 const createServiceSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     description: z.string().optional(),
-    category: z.nativeEnum(ServiceCategory, { message: "Selecione uma categoria" }),
+    serviceCategoryId: z.string().min(1, "Selecione uma categoria"),
     duration: z.coerce.number().min(1, "Duração deve ser pelo menos 1 minuto"),
     basePrice: z.coerce.number().min(0, "Preço base deve ser maior ou igual a 0"),
     currentPrice: z.coerce.number().min(0, "Preço atual deve ser maior ou igual a 0"),
@@ -44,7 +45,7 @@ const createServiceSchema = z.object({
 const editServiceSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     description: z.string().optional(),
-    category: z.nativeEnum(ServiceCategory, { message: "Selecione uma categoria" }),
+    serviceCategoryId: z.string().min(1, "Selecione uma categoria"),
     duration: z.coerce.number().min(1, "Duração deve ser pelo menos 1 minuto"),
     basePrice: z.coerce.number().min(0, "Preço base deve ser maior ou igual a 0"),
     currentPrice: z.coerce.number().min(0, "Preço atual deve ser maior ou igual a 0"),
@@ -60,6 +61,8 @@ const editServiceSchema = z.object({
 
 type CreateServiceFormData = z.infer<typeof createServiceSchema>
 type EditServiceFormData = z.infer<typeof editServiceSchema>
+
+type ServiceFormValues = z.infer<typeof createServiceSchema>
 
 // ===== Componentes UI =====
 function StatCard({ title, value, icon: Icon, color, trend, subtitle }: {
@@ -95,8 +98,7 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
     onToggleStatus: (serviceId: string) => void
     onDelete: (serviceId: string) => void
 }) {
-    const category = service.category as ServiceCategory
-    const config = categoryConfig[category] || categoryConfig[ServiceCategory.OTHER]
+    const categoryName = service.serviceCategory?.name || 'Categoria'
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('pt-BR', { 
@@ -116,12 +118,12 @@ function ServiceRow({ service, onEdit, onToggleStatus, onDelete }: {
         <tr className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
             <td className="py-4 pr-4">
                 <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${config.bg} ${config.border} border`}>
-                        <span className="text-lg">{config.icon}</span>
+                    <div className={`p-2 rounded-lg bg-slate-100 border border-slate-200`}>
+                        <span className="text-lg">📦</span>
                     </div>
                     <div>
                         <div className="font-medium text-gray-900">{service.name}</div>
-                        <div className={`text-sm ${config.color}`}>{config.name}</div>
+                        <div className={`text-sm text-slate-600`}>{categoryName}</div>
                     </div>
                 </div>
             </td>
@@ -203,12 +205,12 @@ function ServiceFormModal({
         reset,
         setValue,
         watch
-    } = useForm({
-        resolver: zodResolver(isEdit ? editServiceSchema : createServiceSchema),
+    } = useForm<ServiceFormValues>({
+        resolver: zodResolver(createServiceSchema) as unknown as Resolver<ServiceFormValues>,
         defaultValues: {
             name: '',
             description: '',
-            category: ServiceCategory.FACIAL_TREATMENT,
+            serviceCategoryId: '',
             duration: 60,
             basePrice: 100,
             currentPrice: 100,
@@ -231,7 +233,7 @@ function ServiceFormModal({
             const formData = {
                 name: service.name || '',
                 description: service.description || '',
-                category: service.category || ServiceCategory.FACIAL_TREATMENT,
+                serviceCategoryId: service.serviceCategoryId || '',
                 duration: service.duration || 60,
                 basePrice: service.basePrice || 100,
                 currentPrice: service.currentPrice || 100,
@@ -260,7 +262,7 @@ function ServiceFormModal({
         }
     }, [watchedBasePrice, isEdit, setValue])
 
-    const onSubmit = async (data: CreateServiceFormData | EditServiceFormData) => {
+    const onSubmit: SubmitHandler<ServiceFormValues> = async (data) => {
         try {
             if (isEdit && service) {
                 await onUpdateService(service.id, data)
@@ -279,10 +281,12 @@ function ServiceFormModal({
         }
     }
 
-    const categories = Object.entries(categoryConfig).map(([value, config]) => ({
-        value,
-        label: config.name
-    }))
+    const [categories, setCategories] = React.useState<{ id: string; name: string }[]>([])
+    React.useEffect(() => {
+        ServiceService.listServiceCategories({ isActive: true, limit: 100 })
+            .then(res => setCategories((res.categories || []).map(c => ({ id: c.id, name: c.name }))))
+            .catch(() => setCategories([]))
+    }, [])
 
     return (
         <Modal
@@ -308,15 +312,14 @@ function ServiceFormModal({
 
                     <div>
                         <label className="block text-sm text-gray-700 mb-2">Categoria*</label>
-                        <select className="input" {...register("category")}>
-                            {categories.map((category) => (
-                                <option key={category.value} value={category.value}>
-                                    {category.label}
-                                </option>
+                        <select className="input" {...register("serviceCategoryId")}>
+                            <option value="">Selecione</option>
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
-                        {errors.category && (
-                            <p className="text-red-400 text-sm mt-1">{errors.category.message}</p>
+                        {errors.serviceCategoryId?.message && (
+                            <p className="text-red-400 text-sm mt-1">{errors.serviceCategoryId.message}</p>
                         )}
                     </div>
                 </div>
@@ -567,6 +570,12 @@ export default function ServicesPage() {
 
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedCategory, setSelectedCategory] = useState<string>("")
+    const [categoryOptions, setCategoryOptions] = useState<{ id: string; name: string }[]>([])
+    React.useEffect(() => {
+        ServiceService.listServiceCategories({ isActive: true, limit: 100 })
+            .then(res => setCategoryOptions((res.categories || []).map(c => ({ id: c.id, name: c.name }))))
+            .catch(() => setCategoryOptions([]))
+    }, [])
     const [selectedStatus, setSelectedStatus] = useState<string>("")
     const [showFilters, setShowFilters] = useState(false)
     const [minPrice, setMinPrice] = useState<string>("")
@@ -584,9 +593,9 @@ export default function ServicesPage() {
         searchServices(searchTerm)
     }
 
-    const handleCategoryFilter = (category: string) => {
-        setSelectedCategory(category)
-        filterByCategory(category as ServiceCategory)
+    const handleCategoryFilter = (serviceCategoryId: string) => {
+        setSelectedCategory(serviceCategoryId)
+        filterByCategory(serviceCategoryId)
     }
 
     const handleStatusFilter = (status: string) => {
@@ -692,10 +701,6 @@ export default function ServicesPage() {
     }
 
     const safePagination = pagination || { page: 1, limit: 10, total: 0, totalPages: 0 }
-    const categories = Object.entries(categoryConfig).map(([value, config]) => ({
-        value,
-        label: config.name
-    }))
 
     return (
         <div className="space-y-6">
@@ -815,10 +820,8 @@ export default function ServicesPage() {
                                 className="input"
                             >
                                 <option value="">Todas as categorias</option>
-                                {categories.map((category) => (
-                                    <option key={category.value} value={category.value}>
-                                        {category.label}
-                                    </option>
+                                {categoryOptions.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
                         </div>

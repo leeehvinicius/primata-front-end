@@ -5,7 +5,6 @@ import {
   ServiceListItem, 
   ServiceFilters, 
   ServiceStats,
-  ServiceCategory,
   CreateServiceData,
   UpdateServiceData
 } from '@/types/services'
@@ -112,8 +111,8 @@ export function useServices() {
   }, [loadServices])
 
   // Filtrar por categoria
-  const filterByCategory = useCallback(async (category: ServiceCategory | '') => {
-    const newFilters = category ? { category, page: 1 } : { category: undefined, page: 1 }
+  const filterByCategory = useCallback(async (serviceCategoryId: string | '') => {
+    const newFilters = serviceCategoryId ? { serviceCategoryId, page: 1 } : { serviceCategoryId: undefined, page: 1 }
     await loadServices(newFilters)
   }, [loadServices])
 

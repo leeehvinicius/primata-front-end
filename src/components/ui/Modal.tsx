@@ -17,8 +17,8 @@ export default function Modal({ open, onClose, title, children, footer, classNam
             className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4 animate-fade-in"
             onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
         >
-            <div className={`card w-full max-w-3xl p-6 animate-slide-up ${className || ""}`}>
-                <div className="flex items-center justify-between mb-4">
+            <div className={`card w-full max-w-3xl p-6 animate-slide-up ${className || ""} max-h-[90vh] flex flex-col`}>
+                <div className="flex items-center justify-between mb-4 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
                     <button 
                         className="btn btn-outline px-3 py-2" 
@@ -27,8 +27,10 @@ export default function Modal({ open, onClose, title, children, footer, classNam
                         Fechar
                     </button>
                 </div>
-                {children}
-                {footer && <div className="mt-4 flex justify-end gap-2">{footer}</div>}
+                <div className="min-h-0 overflow-y-auto pr-1">
+                    {children}
+                </div>
+                {footer && <div className="mt-4 flex justify-end gap-2 flex-shrink-0">{footer}</div>}
             </div>
         </div>
     )

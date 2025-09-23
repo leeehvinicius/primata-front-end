@@ -6,7 +6,8 @@ import {
   ServiceListResponse, 
   ServiceStats, 
   CreateServiceData, 
-  UpdateServiceData 
+  UpdateServiceData,
+  ServiceCategoryEntity 
 } from '@/types/services'
 
 export class ServiceService {
@@ -25,7 +26,7 @@ export class ServiceService {
     if (filters.page) params.append('page', filters.page.toString())
     if (filters.limit) params.append('limit', filters.limit.toString())
     if (filters.search) params.append('search', filters.search)
-    if (filters.category) params.append('category', filters.category)
+    if (filters.serviceCategoryId) params.append('serviceCategoryId', filters.serviceCategoryId)
     if (filters.isActive !== undefined) params.append('isActive', filters.isActive.toString())
     if (filters.minPrice) params.append('minPrice', filters.minPrice.toString())
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice.toString())
@@ -41,6 +42,23 @@ export class ServiceService {
       throw new Error(`Erro ao listar serviços: ${response.status}`)
     }
 
+    return response.json()
+  }
+
+  // ===== Categorias de Serviços (dinâmicas) =====
+  static async listServiceCategories(filters: { name?: string; isActive?: boolean | string; page?: number; limit?: number; sortBy?: string; sortOrder?: string } = {}): Promise<{ categories: ServiceCategoryEntity[]; page?: number; limit?: number; total?: number; totalPages?: number }> {
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') params.append(k, String(v))
+    })
+    const qs = params.toString()
+    const response = await fetch(`${config.apiUrl}/services/categories${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    })
+    if (!response.ok) {
+      throw new Error(`Erro ao listar categorias: ${response.status}`)
+    }
     return response.json()
   }
 
@@ -145,8 +163,8 @@ export class ServiceService {
   }
 
   // Buscar serviços por categoria
-  static async searchServicesByCategory(category: string): Promise<ServiceListItem[]> {
-    const response = await fetch(`${config.apiUrl}/services/search/category/${encodeURIComponent(category)}`, {
+  static async searchServicesByCategory(serviceCategoryId: string): Promise<ServiceListItem[]> {
+    const response = await fetch(`${config.apiUrl}/services/search/category/${encodeURIComponent(serviceCategoryId)}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
     })

@@ -2,7 +2,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthOnce } from '@/lib/useAuthOnce'
-import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock } from 'lucide-react'
+import { AuthService } from '@/lib/authService'
+import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock, CalendarDays } from 'lucide-react'
 import { useState } from 'react'
 
 const items = [
@@ -11,6 +12,8 @@ const items = [
     { href: '/billing', label: 'Financeiro', icon: CreditCard, description: 'Controle' },
     { href: '/services', label: 'Serviços', icon: Scissors, description: 'Catálogo' },
     { href: '/partners', label: 'Parceiros', icon: Building2, description: 'Convênios' },
+    { href: '/stock/categories', label: 'Categorias', icon: Scissors, description: 'Estoque' },
+    { href: '/appointments', label: 'Agendamentos', icon: CalendarDays, description: 'Ver agenda' },
     { href: '/time-tracking', label: 'Ponto', icon: Clock, description: 'Registro de ponto' },
 ]
 
@@ -24,8 +27,15 @@ export default function Sidebar() {
     const [isMobileOpen, setIsMobileOpen] = useState(false)
 
     const handleLogout = async () => {
-        await logout()
-        router.replace('/login')
+        try {
+            await logout()
+        } finally {
+            AuthService.clearLocalData()
+            try { router.replace('/login') } catch {}
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login'
+            }
+        }
     }
 
     const toggleCollapse = () => {
