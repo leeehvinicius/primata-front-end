@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { ServiceListItem, Service } from "@/types/services"
 import { ServiceService } from "@/lib/serviceService"
+import { StockService } from "@/lib/stockService"
 
 // ===== Schemas de Validação =====
 const createServiceSchema = z.object({
@@ -189,7 +190,9 @@ function ServiceFormModal({
     service, 
     isEdit = false,
     onCreateService,
-    onUpdateService
+    onUpdateService,
+    categories,
+    categoriesLoading
 }: {
     open: boolean
     onClose: () => void
@@ -197,6 +200,8 @@ function ServiceFormModal({
     isEdit?: boolean
     onCreateService: (data: CreateServiceFormData) => Promise<void>
     onUpdateService: (serviceId: string, data: EditServiceFormData) => Promise<void>
+    categories: { id: string; name: string }[]
+    categoriesLoading: boolean
 }) {
     const {
         register,
@@ -281,12 +286,6 @@ function ServiceFormModal({
         }
     }
 
-    const [categories, setCategories] = React.useState<{ id: string; name: string }[]>([])
-    React.useEffect(() => {
-        ServiceService.listServiceCategories({ isActive: true, limit: 100 })
-            .then(res => setCategories((res.categories || []).map(c => ({ id: c.id, name: c.name }))))
-            .catch(() => setCategories([]))
-    }, [])
 
     return (
         <Modal
@@ -312,8 +311,14 @@ function ServiceFormModal({
 
                     <div>
                         <label className="block text-sm text-gray-700 mb-2">Categoria*</label>
-                        <select className="input" {...register("serviceCategoryId")}>
-                            <option value="">Selecione</option>
+                        <select 
+                            className="input" 
+                            {...register("serviceCategoryId")}
+                            disabled={categoriesLoading}
+                        >
+                            <option value="">
+                                {categoriesLoading ? 'Carregando categorias...' : 'Selecione'}
+                            </option>
                             {categories.map((c) => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -571,10 +576,31 @@ export default function ServicesPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedCategory, setSelectedCategory] = useState<string>("")
     const [categoryOptions, setCategoryOptions] = useState<{ id: string; name: string }[]>([])
+    const [categoryOptionsLoading, setCategoryOptionsLoading] = useState(false)
+    
     React.useEffect(() => {
-        ServiceService.listServiceCategories({ isActive: true, limit: 100 })
-            .then(res => setCategoryOptions((res.categories || []).map(c => ({ id: c.id, name: c.name }))))
-            .catch(() => setCategoryOptions([]))
+        const fetchCategoryOptions = async () => {
+            setCategoryOptionsLoading(true)
+            try {
+                // Tentar primeiro o endpoint de categorias de serviços
+                try {
+                    const res = await ServiceService.listServiceCategories({ isActive: true, limit: 100 })
+                    setCategoryOptions((res.categories || []).map(c => ({ id: c.id, name: c.name })))
+                } catch (serviceError) {
+                    console.log('Endpoint de categorias de serviços não encontrado, usando categorias de estoque')
+                    // Fallback para categorias de estoque
+                    const res = await StockService.listCategories({ isActive: true, limit: 100 })
+                    setCategoryOptions((res.categories || []).map(c => ({ id: c.id, name: c.name })))
+                }
+            } catch (error) {
+                console.error('Erro ao carregar categorias:', error)
+                setCategoryOptions([])
+            } finally {
+                setCategoryOptionsLoading(false)
+            }
+        }
+        
+        fetchCategoryOptions()
     }, [])
     const [selectedStatus, setSelectedStatus] = useState<string>("")
     const [showFilters, setShowFilters] = useState(false)
@@ -818,8 +844,11 @@ export default function ServicesPage() {
                                 value={selectedCategory}
                                 onChange={(e) => handleCategoryFilter(e.target.value)}
                                 className="input"
+                                disabled={categoryOptionsLoading}
                             >
-                                <option value="">Todas as categorias</option>
+                                <option value="">
+                                    {categoryOptionsLoading ? 'Carregando categorias...' : 'Todas as categorias'}
+                                </option>
                                 {categoryOptions.map((c) => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
@@ -948,6 +977,8 @@ export default function ServicesPage() {
                 isEdit={false}
                 onCreateService={handleCreateServiceSubmit}
                 onUpdateService={handleUpdateServiceSubmit}
+                categories={categoryOptions}
+                categoriesLoading={categoryOptionsLoading}
             />
 
             {/* Modal de Edição */}
@@ -958,6 +989,8 @@ export default function ServicesPage() {
                 isEdit={true}
                 onCreateService={handleCreateServiceSubmit}
                 onUpdateService={handleUpdateServiceSubmit}
+                categories={categoryOptions}
+                categoriesLoading={categoryOptionsLoading}
             />
 
             {/* Modal de Confirmação de Exclusão */}
