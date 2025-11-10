@@ -2,6 +2,7 @@
 import { useAuthOnce } from '@/lib/useAuthOnce'
 import { Bell, Settings, Search, User } from 'lucide-react'
 import { useState } from 'react'
+import Image from 'next/image'
 
 export default function Topbar() {
     const { user, hasInitialized } = useAuthOnce()
@@ -12,10 +13,15 @@ export default function Topbar() {
         return (
             <header className="h-14 border-b border-gray-200 px-4 flex items-center justify-between bg-white shadow-sm flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-xs">P</span>
+                    <div className="relative w-10 h-10">
+                        <Image
+                            src="/LOGO_REVITTAH_CARE_SEM_FUNDO.png"
+                            alt="Revittah Care"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
-                    <div className="text-gray-700 font-medium text-sm">Primata</div>
                 </div>
                 <div className="text-gray-400">—</div>
             </header>
@@ -27,10 +33,15 @@ export default function Topbar() {
             {/* Left Section */}
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-xs">P</span>
+                    <div className="relative w-10 h-10">
+                        <Image
+                            src="/LOGO_REVITTAH_CARE_SEM_FUNDO.png"
+                            alt="Revittah Care"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
-                    <div className="text-gray-700 font-medium text-sm">Primata</div>
                 </div>
                 
                 {/* Search Bar */}
@@ -127,7 +138,7 @@ export default function Topbar() {
                     {/* User Dropdown */}
                     {showUserMenu && (
                         <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
-                            <div className="p-3 border-b border-gray-200">
+                            <div className="p-3">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold">
                                         {user?.name?.charAt(0) ?? 'U'}
@@ -137,11 +148,6 @@ export default function Topbar() {
                                         <div className="text-xs text-gray-500">{user?.email ?? '—'}</div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="p-2 border-t border-gray-200">
-                                <button className="w-full text-left px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200">
-                                    Sair
-                                </button>
                             </div>
                         </div>
                     )}

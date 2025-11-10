@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuthOnce } from "@/lib/useAuthOnce"
 import { Eye, EyeOff, Lock, Mail } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
     const [email, setEmail] = useState("")
@@ -32,17 +33,19 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen grid place-items-center bg-gradient-to-br from-green-50 via-emerald-50 to-blue-50">
             <div className="card w-full max-w-md p-8 animate-fade-in">
-                <div className="flex flex-col items-center mb-8 text-center">
-                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
-                        <span className="text-white font-bold text-3xl">P</span>
+                <div className="flex flex-col items-center text-center">
+                    <div className="w-56 h-56 relative">
+                        <Image
+                            src="/login_logo.png"
+                            alt="Revittah Care"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                        Primata Estética
-                    </h1>
-                    <p className="text-gray-600 mt-2">Sistema de Gestão Clínica</p>
                 </div>
 
-                <form className="space-y-6" onSubmit={handleSubmit}>
+                <form className="space-y-6 -mt-12" onSubmit={handleSubmit}>
                     <div>
                         <label className="text-sm text-gray-700 font-medium mb-2 block">E-mail</label>
                         <div className="relative">

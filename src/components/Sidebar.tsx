@@ -5,6 +5,7 @@ import { useAuthOnce } from '@/lib/useAuthOnce'
 import { AuthService } from '@/lib/authService'
 import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock, CalendarDays } from 'lucide-react'
 import { useState } from 'react'
+import Image from 'next/image'
 
 const items = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Visão geral' },
@@ -80,29 +81,27 @@ export default function Sidebar() {
             `}>
                 {/* Header - Fixo no topo */}
                 <div className="p-4 border-b border-gray-200 bg-white flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                        <div className={`flex items-center gap-2 transition-all duration-300 ${isCollapsed ? 'justify-center w-full' : ''}`}>
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
-                                <span className="text-white font-bold text-sm">P</span>
-                            </div>
-                            {!isCollapsed && (
-                                <div className="flex flex-col">
-                                    <div className="text-sm font-bold text-gray-900 bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                                        Primata
-                                    </div>
-                                    <div className="text-xs text-gray-500">Sistema</div>
-                                </div>
-                            )}
+                    <div className="flex items-center justify-center relative">
+                        <div className={`relative ${isCollapsed ? 'w-16 h-16' : 'w-24 h-24'} flex-shrink-0`}>
+                            <Image
+                                src="/LOGO_REVITTAH_CARE_SEM_FUNDO.png"
+                                alt="Revittah Care"
+                                fill
+                                className="object-contain"
+                                priority
+                            />
                         </div>
                         
                         {/* Desktop Collapse Button */}
-                        <button
-                            onClick={toggleCollapse}
-                            className="hidden lg:flex p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                            title={isCollapsed ? 'Expandir' : 'Recolher'}
-                        >
-                            <div className={`w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
-                        </button>
+                        {!isCollapsed && (
+                            <button
+                                onClick={toggleCollapse}
+                                className="hidden lg:flex absolute right-0 p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                                title="Recolher"
+                            >
+                                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full transition-transform duration-300" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
