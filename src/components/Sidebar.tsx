@@ -3,23 +3,21 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthOnce } from '@/lib/useAuthOnce'
 import { AuthService } from '@/lib/authService'
-import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock, CalendarDays, MessageSquare } from 'lucide-react'
-import { useState } from 'react'
+import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock, CalendarDays, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 const items = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Visão geral' },
-    { href: '/users', label: 'Usuários', icon: Users2, description: 'Gerenciar' },
-    { href: '/billing', label: 'Financeiro', icon: CreditCard, description: 'Controle' },
-    { href: '/services', label: 'Serviços', icon: Scissors, description: 'Catálogo' },
-    { href: '/partners', label: 'Parceiros', icon: Building2, description: 'Convênios' },
-    { href: '/stock/categories', label: 'Categorias', icon: Scissors, description: 'Estoque' },
-    { href: '/appointments', label: 'Agendamentos', icon: CalendarDays, description: 'Ver agenda' },
-    { href: '/time-tracking', label: 'Ponto', icon: Clock, description: 'Registro de ponto' },
-    { href: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, description: 'Lembretes' },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/users', label: 'Usuários', icon: Users2 },
+    { href: '/billing', label: 'Financeiro', icon: CreditCard },
+    { href: '/services', label: 'Serviços', icon: Scissors },
+    { href: '/partners', label: 'Parceiros', icon: Building2 },
+    { href: '/stock/categories', label: 'Categorias', icon: Scissors },
+    { href: '/appointments', label: 'Agendamentos', icon: CalendarDays },
+    { href: '/time-tracking', label: 'Ponto', icon: Clock },
+    { href: '/whatsapp', label: 'WhatsApp', icon: MessageSquare },
 ]
-
-
 
 export default function Sidebar() {
     const pathname = usePathname()
@@ -27,6 +25,17 @@ export default function Sidebar() {
     const router = useRouter()
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [isMobileOpen, setIsMobileOpen] = useState(false)
+
+    // Fecha mobile quando redimensiona para desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setIsMobileOpen(false)
+            }
+        }
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
 
     const handleLogout = async () => {
         try {
@@ -65,114 +74,99 @@ export default function Sidebar() {
             {/* Mobile Menu Button */}
             <button
                 onClick={toggleMobile}
-                className="fixed top-4 left-4 z-50 lg:hidden bg-white p-2 rounded-lg shadow-lg border border-gray-200"
+                className="fixed top-3 left-3 z-50 lg:hidden bg-white p-2 rounded-lg shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                aria-label="Toggle menu"
             >
-                {isMobileOpen ? <X size={18} /> : <Menu size={18} />}
+                {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
 
             {/* Sidebar */}
             <aside className={`
                 fixed lg:static inset-y-0 left-0 z-50
-                transform transition-transform duration-300 ease-in-out
+                transform transition-all duration-300 ease-in-out
                 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-                ${isCollapsed ? 'w-16' : 'w-64'}
-                h-screen bg-gradient-to-b from-white to-gray-50 
-                border-r border-gray-200 shadow-xl
+                ${isCollapsed ? 'w-16' : 'w-56'}
+                h-screen bg-white border-r border-gray-200 shadow-sm
                 flex flex-col flex-shrink-0
             `}>
-                {/* Header - Fixo no topo */}
-                <div className="p-4 border-b border-gray-200 bg-white flex-shrink-0">
-                    <div className="flex items-center justify-center relative">
-                        <div className={`relative ${isCollapsed ? 'w-16 h-16' : 'w-24 h-24'} flex-shrink-0`}>
-                            <Image
-                                src="/LOGO_REVITTAH_CARE_SEM_FUNDO.png"
-                                alt="Revittah Care"
-                                fill
-                                className="object-contain"
-                                priority
-                            />
-                        </div>
-                        
-                        {/* Desktop Collapse Button */}
-                        {!isCollapsed && (
-                            <button
-                                onClick={toggleCollapse}
-                                className="hidden lg:flex absolute right-0 p-1.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                                title="Recolher"
-                            >
-                                <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full transition-transform duration-300" />
-                            </button>
-                        )}
+                {/* Header */}
+                <div className="h-16 px-3 border-b border-gray-200 bg-white flex-shrink-0 relative flex items-center justify-center">
+                    <div className={`relative ${isCollapsed ? 'w-12 h-12' : 'w-16 h-16'} flex-shrink-0 transition-all duration-300`}>
+                        <Image
+                            src="/LOGO_REVITTAH_CARE_SEM_FUNDO.png"
+                            alt="Revittah Care"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
                     </div>
+                    
+                    {/* Desktop Collapse/Expand Button */}
+                    {!isCollapsed && (
+                        <button
+                            onClick={toggleCollapse}
+                            className="hidden lg:flex absolute top-1/2 -translate-y-1/2 right-2 p-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-gray-500 hover:text-gray-700 z-10"
+                            title="Recolher"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                    )}
+                    
+                    {/* Botão para expandir quando colapsado */}
+                    {isCollapsed && (
+                        <button
+                            onClick={toggleCollapse}
+                            className="hidden lg:flex absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 p-1.5 rounded-full bg-white border border-gray-200 shadow-md hover:bg-gray-50 transition-colors duration-200 text-gray-500 hover:text-gray-700 z-10"
+                            title="Expandir"
+                        >
+                            <ChevronRight size={14} />
+                        </button>
+                    )}
                 </div>
 
-                {/* Navigation - Com scroll se necessário */}
-                <nav className="flex-1 p-3 space-y-1 overflow-y-auto min-h-0">
-                    {/* Main Navigation */}
-                    <div className="space-y-1">
-                        <div className={`text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 transition-all duration-300 ${isCollapsed ? 'text-center' : 'px-2'}`}>
-                            {!isCollapsed && 'Principal'}
-                        </div>
-                        {items.map(({ href, label, icon: Icon, description }) => {
-                            const active = pathname === href
-                            return (
-                                <Link
-                                    key={href}
-                                    href={href}
-                                    onClick={closeMobile}
-                                    className={`
-                                        group flex items-center gap-2 px-2 py-2 rounded-lg transition-all duration-300
-                                        ${active 
-                                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg transform scale-105' 
-                                            : 'text-gray-700 hover:bg-green-50 hover:text-green-700 hover:shadow-md'
-                                        }
-                                        ${isCollapsed ? 'justify-center' : ''}
-                                    `}
-                                >
-                                    <div className={`
-                                        p-1.5 rounded-lg transition-all duration-300
-                                        ${active 
-                                            ? 'bg-white/20 text-white' 
-                                            : 'bg-gray-100 text-gray-600 group-hover:bg-green-100 group-hover:text-green-600'
-                                        }
-                                    `}>
-                                        <Icon className="h-4 w-4" />
-                                    </div>
-                                    {!isCollapsed && (
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium">{label}</div>
-                                            <div className={`text-xs transition-all duration-300 ${active ? 'text-white/80' : 'text-gray-500'}`}>
-                                                {description}
-                                            </div>
-                                        </div>
-                                    )}
-                                </Link>
-                            )
-                        })}
-                    </div>
-
-
+                {/* Navigation */}
+                <nav className="flex-1 p-2 space-y-1 overflow-y-auto min-h-0">
+                    {items.map(({ href, label, icon: Icon }) => {
+                        const active = pathname === href || pathname.startsWith(href + '/')
+                        return (
+                            <Link
+                                key={href}
+                                href={href}
+                                onClick={closeMobile}
+                                className={`
+                                    group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200
+                                    ${active 
+                                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md' 
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                    }
+                                    ${isCollapsed ? 'justify-center' : ''}
+                                `}
+                                title={isCollapsed ? label : undefined}
+                            >
+                                <Icon className={`flex-shrink-0 ${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                                {!isCollapsed && (
+                                    <span className="text-sm font-medium truncate">{label}</span>
+                                )}
+                            </Link>
+                        )
+                    })}
                 </nav>
 
-                {/* Footer - Fixo na parte inferior */}
-                <div className="p-3 border-t border-gray-200 bg-white flex-shrink-0">
+                {/* Footer */}
+                <div className="p-2 border-t border-gray-200 bg-white flex-shrink-0">
                     <button
                         onClick={handleLogout}
                         className={`
-                            w-full group flex items-center gap-2 px-2 py-2 rounded-lg
-                            bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium
-                            hover:from-red-600 hover:to-pink-700 transform hover:scale-105
-                            transition-all duration-300 shadow-lg hover:shadow-xl
+                            w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg
+                            bg-red-50 text-red-600 font-medium
+                            hover:bg-red-100 transition-all duration-200
                             ${isCollapsed ? 'justify-center' : ''}
                         `}
+                        title={isCollapsed ? "Sair" : undefined}
                     >
-                        <div className="p-1.5 rounded-lg bg-white/20">
-                            <LogOut className="h-4 w-4" />
-                        </div>
+                        <LogOut className={`flex-shrink-0 ${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
                         {!isCollapsed && (
-                            <span className="text-sm group-hover:translate-x-1 transition-transform duration-300">
-                                Sair
-                            </span>
+                            <span className="text-sm">Sair</span>
                         )}
                     </button>
                 </div>
