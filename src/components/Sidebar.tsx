@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthOnce } from '@/lib/useAuthOnce'
 import { AuthService } from '@/lib/authService'
-import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock, CalendarDays } from 'lucide-react'
+import { LayoutDashboard, Users2, CreditCard, Scissors, LogOut, Menu, X, Building2, Clock, CalendarDays, MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
 
@@ -16,6 +16,7 @@ const items = [
     { href: '/stock/categories', label: 'Categorias', icon: Scissors, description: 'Estoque' },
     { href: '/appointments', label: 'Agendamentos', icon: CalendarDays, description: 'Ver agenda' },
     { href: '/time-tracking', label: 'Ponto', icon: Clock, description: 'Registro de ponto' },
+    { href: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, description: 'Lembretes' },
 ]
 
 
