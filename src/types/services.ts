@@ -17,6 +17,7 @@ export interface Service {
   duration: number
   basePrice: number
   currentPrice: number
+  color?: string
   requiresProfessional: boolean
   maxConcurrentClients: number
   preparationTime: number
@@ -79,6 +80,7 @@ export interface CreateServiceData {
   duration: number
   basePrice: number
   currentPrice: number
+  color?: string
   requiresProfessional?: boolean
   maxConcurrentClients?: number
   preparationTime?: number
@@ -96,6 +98,7 @@ export interface UpdateServiceData {
   duration?: number
   basePrice?: number
   currentPrice?: number
+  color?: string
   requiresProfessional?: boolean
   maxConcurrentClients?: number
   preparationTime?: number

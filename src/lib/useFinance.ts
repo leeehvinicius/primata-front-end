@@ -6,6 +6,11 @@ import type {
   PaymentStats
 } from '../types/finance';
 
+// Função auxiliar para converter amount para número
+const parseAmount = (amount: number | string): number => {
+  return typeof amount === 'string' ? parseFloat(amount) || 0 : (amount || 0);
+};
+
 interface UseFinanceState {
   payments: Payment[];
   stats: PaymentStats | null;
@@ -163,11 +168,11 @@ export const useFinance = (initialFilters: PaymentFilters = {}) => {
 
   // Cálculos derivados
   const totalAmount = useMemo(() => {
-    return state.payments.reduce((sum, payment) => sum + payment.amount, 0);
+    return state.payments.reduce((sum, payment) => sum + parseAmount(payment.amount), 0);
   }, [state.payments]);
 
   const totalDiscounts = useMemo(() => {
-    return state.payments.reduce((sum, payment) => sum + payment.discountAmount, 0);
+    return state.payments.reduce((sum, payment) => sum + (payment.discountAmount || 0), 0);
   }, [state.payments]);
 
   const netAmount = useMemo(() => {
@@ -184,7 +189,7 @@ export const useFinance = (initialFilters: PaymentFilters = {}) => {
         grouped[method] = { count: 0, total: 0 };
       }
       grouped[method].count++;
-      grouped[method].total += payment.amount;
+      grouped[method].total += parseAmount(payment.amount);
     });
     
     return grouped;
@@ -200,7 +205,7 @@ export const useFinance = (initialFilters: PaymentFilters = {}) => {
         grouped[status] = { count: 0, total: 0 };
       }
       grouped[status].count++;
-      grouped[status].total += payment.amount;
+      grouped[status].total += parseAmount(payment.amount);
     });
     
     return grouped;

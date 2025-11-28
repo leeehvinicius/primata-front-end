@@ -170,6 +170,17 @@ export default function PartnersPage() {
                 </button>
             </div>
 
+            {/* Card de Estatísticas */}
+            <div className="card p-6">
+                <div className="flex items-center gap-4">
+                    <div className="text-4xl">🤝</div>
+                    <div>
+                        <div className="text-2xl font-bold text-gray-900">{partners.length}</div>
+                        <div className="text-gray-600">Parceiros</div>
+                    </div>
+                </div>
+            </div>
+
             <div className="card p-6">
                 {loading ? (
                     <LoadingSpinner size="lg" text="Carregando parceiros..." />
@@ -181,52 +192,74 @@ export default function PartnersPage() {
                                     <th className="py-3 pr-4 font-medium">Nome</th>
                                     <th className="py-3 pr-4 font-medium">Documento</th>
                                     <th className="py-3 pr-4 font-medium">Descontos</th>
-                                    <th className="py-3 pr-4 font-medium">Desconto Fixo</th>
                                     <th className="py-3 pr-4 font-medium">Status</th>
                                     <th className="py-3 pr-0 font-medium">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {partners.map(p => (
-                                    <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                                        <td className="py-4 pr-4">
-                                            <div className="font-medium text-gray-900">{p.name}</div>
-                                        </td>
-                                        <td className="py-4 pr-4">
-                                            <div className="text-gray-900">{p.documentType} • {p.document}</div>
-                                        </td>
-                                        <td className="py-4 pr-4">
-                                            <div className="text-sm text-gray-700">Parceiro: <span className="font-medium">{Number(p.partnerDiscount).toFixed(2)}%</span></div>
-                                            <div className="text-sm text-gray-700">Cliente: <span className="font-medium">{Number(p.clientDiscount).toFixed(2)}%</span></div>
-                                        </td>
-                                        <td className="py-4 pr-4">
-                                            <div className="text-sm text-gray-700">{Number(p.fixedDiscount || 0).toFixed(2)}</div>
-                                        </td>
-                                        <td className="py-4 pr-4">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${p.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
-                                                {p.isActive ? 'Ativo' : 'Inativo'}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 pr-0">
-                                            <div className="flex items-center gap-2 justify-end">
-                                                <button
-                                                    onClick={() => openEditModal(p)}
-                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                                                    title="Editar parceiro"
-                                                >
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => setPartnerToDelete(p)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                                                    title="Excluir parceiro"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {partners.map(p => {
+                                    const initial = p.name.charAt(0).toUpperCase()
+                                    const formatCurrency = (value: number) => {
+                                        return new Intl.NumberFormat('pt-BR', {
+                                            style: 'currency',
+                                            currency: 'BRL'
+                                        }).format(value)
+                                    }
+                                    return (
+                                        <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                                            <td className="py-4 pr-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-semibold text-gray-700">
+                                                        {initial}
+                                                    </div>
+                                                    <div className="font-medium text-gray-900">{p.name}</div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 pr-4">
+                                                <div className="text-gray-900">{p.documentType}</div>
+                                                <div className="text-sm text-gray-600">{p.document}</div>
+                                            </td>
+                                            <td className="py-4 pr-4">
+                                                <div className="text-sm text-gray-700">
+                                                    Parceiro: <span className="font-medium">{Number(p.partnerDiscount).toFixed(2)}%</span>
+                                                </div>
+                                                <div className="text-sm text-gray-700">
+                                                    Cliente: <span className="font-medium">{Number(p.clientDiscount).toFixed(2)}%</span>
+                                                </div>
+                                                <div className="text-sm text-gray-700">
+                                                    Valor fixo: <span className="font-medium">
+                                                        {p.fixedDiscount && p.fixedDiscount > 0 
+                                                            ? formatCurrency(p.fixedDiscount) 
+                                                            : '-'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 pr-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${p.isActive ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
+                                                    {p.isActive ? 'Ativo' : 'Inativo'}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 pr-0">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => openEditModal(p)}
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                                        title="Editar parceiro"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setPartnerToDelete(p)}
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                                        title="Excluir parceiro"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                                 {partners.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="py-12 text-center">
@@ -252,7 +285,7 @@ export default function PartnersPage() {
             >
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                     <div>
-                        <label className="block text-sm text-gray-700 mb-2">Nome do Parceiro *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Parceiro *</label>
                         <input
                             type="text"
                             placeholder="Digite o nome do parceiro"
@@ -262,22 +295,19 @@ export default function PartnersPage() {
                         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
                     </div>
                     <div>
-                        <label className="block text-sm text-gray-700 mb-2">Tipo de Documento *</label>
-                        <div className="flex gap-4">
-                            <label className="inline-flex items-center gap-2">
-                                <input type="radio" value="CPF" {...register("documentType")} />
-                                <span>CPF</span>
-                            </label>
-                            <label className="inline-flex items-center gap-2">
-                                <input type="radio" value="CNPJ" {...register("documentType")} />
-                                <span>CNPJ</span>
-                            </label>
-                        </div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento *</label>
+                        <select
+                            className="input"
+                            {...register("documentType")}
+                        >
+                            <option value="CPF">CPF</option>
+                            <option value="CNPJ">CNPJ</option>
+                        </select>
                         {errors.documentType && <p className="mt-1 text-sm text-red-600">{errors.documentType.message}</p>}
                     </div>
 
                     <div>
-                        <label className="block text-sm text-gray-700 mb-2">Documento *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Documento *</label>
                         <input
                             type="text"
                             placeholder="Digite o CPF ou CNPJ"
@@ -287,47 +317,47 @@ export default function PartnersPage() {
                         {errors.document && <p className="mt-1 text-sm text-red-600">{errors.document.message}</p>}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm text-gray-700 mb-2">Desconto para o Parceiro (%) *</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min={0}
-                                placeholder="0.00"
-                                className="input"
-                                {...register("partnerDiscount", { valueAsNumber: true })}
-                            />
-                            {errors.partnerDiscount && <p className="mt-1 text-sm text-red-600">{errors.partnerDiscount.message}</p>}
-                        </div>
-                        <div>
-                            <label className="block text-sm text-gray-700 mb-2">Desconto para o Cliente (%) *</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min={0}
-                                placeholder="0.00"
-                                className="input"
-                                {...register("clientDiscount", { valueAsNumber: true })}
-                            />
-                            {errors.clientDiscount && <p className="mt-1 text-sm text-red-600">{errors.clientDiscount.message}</p>}
-                        </div>
-                        <div>
-                            <label className="block text-sm text-gray-700 mb-2">Desconto Fixo (R$)</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min={0}
-                                placeholder="0.00"
-                                className="input"
-                                {...register("fixedDiscount", { valueAsNumber: true })}
-                            />
-                            {errors.fixedDiscount && <p className="mt-1 text-sm text-red-600">{errors.fixedDiscount.message}</p>}
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Desconto para o Parceiro (%) *</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            placeholder="0.00"
+                            className="input"
+                            {...register("partnerDiscount", { valueAsNumber: true })}
+                        />
+                        {errors.partnerDiscount && <p className="mt-1 text-sm text-red-600">{errors.partnerDiscount.message}</p>}
                     </div>
 
                     <div>
-                        <label className="block text-sm text-gray-700 mb-2">Observações</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Desconto para o Cliente (%) *</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            placeholder="0.00"
+                            className="input"
+                            {...register("clientDiscount", { valueAsNumber: true })}
+                        />
+                        {errors.clientDiscount && <p className="mt-1 text-sm text-red-600">{errors.clientDiscount.message}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Desconto (valor fixo)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            placeholder="0.00"
+                            className="input"
+                            {...register("fixedDiscount", { valueAsNumber: true })}
+                        />
+                        {errors.fixedDiscount && <p className="mt-1 text-sm text-red-600">{errors.fixedDiscount.message}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Observações</label>
                         <textarea
                             placeholder="Digite observações sobre o parceiro"
                             rows={4}
@@ -345,7 +375,7 @@ export default function PartnersPage() {
                         <button
                             type="button"
                             onClick={() => setModalOpen(false)}
-                            className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
+                            className="btn"
                         >
                             Cancelar
                         </button>

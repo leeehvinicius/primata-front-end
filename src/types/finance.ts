@@ -8,19 +8,29 @@ export interface Payment {
   id: string;
   clientId: string;
   serviceId: string;
-  appointmentId?: string;
-  amount: number;
-  discountAmount: number;
+  appointmentId?: string | null;
+  // amount pode vir como string da API
+  amount: number | string;
+  // discountAmount pode não existir, usar partnerDiscount + clientDiscount
+  discountAmount?: number;
   // Descontos e valor final (podem vir como string da API)
-  partnerDiscount?: number | string;
-  clientDiscount?: number | string;
+  partnerDiscount?: number | string | null;
+  clientDiscount?: number | string | null;
+  additionalValue?: number | string | null;
   finalAmount?: number | string;
   partnerName?: string | null;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  paymentDate?: string;
   dueDate: string;
   paidAt?: string;
-  notes?: string;
+  notes?: string | null;
+  transactionId?: string | null;
+  externalPaymentId?: string | null;
+  receiptNumber?: string | null;
+  refundedAt?: string | null;
+  refundAmount?: number | string | null;
+  createdBy?: string;
   createdAt: string;
   updatedAt: string;
   
@@ -44,6 +54,16 @@ export interface Payment {
     duration?: number | null;
     color?: string | null;
   };
+  appointment?: {
+    id: string;
+    scheduledDate?: string;
+    startTime?: string;
+    endTime?: string;
+    partner?: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
 }
 
 export interface PaymentListResponse {

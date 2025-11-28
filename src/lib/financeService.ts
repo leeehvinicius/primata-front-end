@@ -26,6 +26,8 @@ export class FinanceService {
     const queryString = params.toString();
     const endpoint = queryString ? `/payments?${queryString}` : '/payments';
     
+    console.log('FinanceService.getPayments - Endpoint:', endpoint, 'Filters:', filters);
+    
     return api.get<PaymentListResponse>(endpoint);
   }
 

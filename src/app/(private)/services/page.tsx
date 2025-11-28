@@ -31,32 +31,19 @@ const createServiceSchema = z.object({
     description: z.string().optional(),
     serviceCategoryId: z.string().min(1, "Selecione uma categoria"),
     duration: z.coerce.number().min(1, "Duração deve ser pelo menos 1 minuto"),
-    basePrice: z.coerce.number().min(0, "Preço base deve ser maior ou igual a 0"),
-    currentPrice: z.coerce.number().min(0, "Preço atual deve ser maior ou igual a 0"),
-    requiresProfessional: z.boolean().default(true),
-    maxConcurrentClients: z.coerce.number().min(1, "Máximo de clientes deve ser pelo menos 1"),
-    preparationTime: z.coerce.number().min(0, "Tempo de preparação deve ser maior ou igual a 0"),
-    recoveryTime: z.coerce.number().min(0, "Tempo de recuperação deve ser maior ou igual a 0"),
-    contraindications: z.string().optional(),
-    benefits: z.string().optional(),
-    notes: z.string().optional(),
+    currentPrice: z.coerce.number().min(0, "Preço deve ser maior ou igual a 0"),
+    color: z.string().min(1, "Selecione uma cor"),
     isActive: z.boolean().default(true)
 })
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const editServiceSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     description: z.string().optional(),
     serviceCategoryId: z.string().min(1, "Selecione uma categoria"),
     duration: z.coerce.number().min(1, "Duração deve ser pelo menos 1 minuto"),
-    basePrice: z.coerce.number().min(0, "Preço base deve ser maior ou igual a 0"),
-    currentPrice: z.coerce.number().min(0, "Preço atual deve ser maior ou igual a 0"),
-    requiresProfessional: z.boolean().default(true),
-    maxConcurrentClients: z.coerce.number().min(1, "Máximo de clientes deve ser pelo menos 1"),
-    preparationTime: z.coerce.number().min(0, "Tempo de preparação deve ser maior ou igual a 0"),
-    recoveryTime: z.coerce.number().min(0, "Tempo de recuperação deve ser maior ou igual a 0"),
-    contraindications: z.string().optional(),
-    benefits: z.string().optional(),
-    notes: z.string().optional(),
+    currentPrice: z.coerce.number().min(0, "Preço deve ser maior ou igual a 0"),
+    color: z.string().min(1, "Selecione uma cor"),
     isActive: z.boolean().default(true)
 })
 
@@ -217,20 +204,11 @@ function ServiceFormModal({
             description: '',
             serviceCategoryId: '',
             duration: 60,
-            basePrice: 100,
-            currentPrice: 100,
-            requiresProfessional: true,
-            maxConcurrentClients: 1,
-            preparationTime: 10,
-            recoveryTime: 15,
-            contraindications: '',
-            benefits: '',
-            notes: '',
+            currentPrice: 0,
+            color: '#3B82F6',
             isActive: true
         }
     })
-
-    const watchedBasePrice = watch('basePrice')
 
     // Preenche o formulário quando editar
     React.useEffect(() => {
@@ -240,15 +218,8 @@ function ServiceFormModal({
                 description: service.description || '',
                 serviceCategoryId: service.serviceCategoryId || '',
                 duration: service.duration || 60,
-                basePrice: service.basePrice || 100,
-                currentPrice: service.currentPrice || 100,
-                requiresProfessional: service.requiresProfessional !== false,
-                maxConcurrentClients: service.maxConcurrentClients || 1,
-                preparationTime: service.preparationTime || 10,
-                recoveryTime: service.recoveryTime || 15,
-                contraindications: service.contraindications || '',
-                benefits: service.benefits || '',
-                notes: service.notes || '',
+                currentPrice: service.currentPrice || 0,
+                color: service.color || '#3B82F6',
                 isActive: service.isActive !== false
             }
             
@@ -259,13 +230,6 @@ function ServiceFormModal({
             reset()
         }
     }, [open, service, isEdit, setValue, reset])
-
-    // Sincroniza preço atual com preço base quando criar novo serviço
-    React.useEffect(() => {
-        if (!isEdit && watchedBasePrice) {
-            setValue('currentPrice', watchedBasePrice)
-        }
-    }, [watchedBasePrice, isEdit, setValue])
 
     const onSubmit: SubmitHandler<ServiceFormValues> = async (data) => {
         try {
@@ -295,53 +259,49 @@ function ServiceFormModal({
             className="max-w-4xl"
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Informações Básicas */}
+                {/* Nome do Serviço */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Serviço *
+                    </label>
+                    <input 
+                        className="input" 
+                        {...register("name")}
+                        placeholder="Ex: Limpeza de Pele Profunda"
+                    />
+                    {errors.name && (
+                        <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>
+                    )}
+                </div>
+
+                {/* Categoria */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Categoria *
+                    </label>
+                    <select 
+                        className="input" 
+                        {...register("serviceCategoryId")}
+                        disabled={categoriesLoading}
+                    >
+                        <option value="">
+                            {categoriesLoading ? 'Carregando categorias...' : 'Selecione uma categoria'}
+                        </option>
+                        {categories.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                    {errors.serviceCategoryId?.message && (
+                        <p className="text-red-400 text-sm mt-1">{errors.serviceCategoryId.message}</p>
+                    )}
+                </div>
+
+                {/* Duração e Preço */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm text-gray-700 mb-2">Nome*</label>
-                        <input 
-                            className="input" 
-                            {...register("name")}
-                            placeholder="Nome do serviço"
-                        />
-                        {errors.name && (
-                            <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Categoria*</label>
-                        <select 
-                            className="input" 
-                            {...register("serviceCategoryId")}
-                            disabled={categoriesLoading}
-                        >
-                            <option value="">
-                                {categoriesLoading ? 'Carregando categorias...' : 'Selecione'}
-                            </option>
-                            {categories.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
-                        {errors.serviceCategoryId?.message && (
-                            <p className="text-red-400 text-sm mt-1">{errors.serviceCategoryId.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm text-gray-700 mb-2">Descrição</label>
-                    <textarea 
-                        className="input min-h-[80px]" 
-                        {...register("description")}
-                        placeholder="Descrição detalhada do serviço"
-                    />
-                </div>
-
-                {/* Duração e Preços */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Duração (minutos)*</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Duração (minutos) *
+                        </label>
                         <input 
                             className="input" 
                             type="number"
@@ -354,27 +314,15 @@ function ServiceFormModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm text-gray-700 mb-2">Preço Base (R$)*</label>
-                        <input 
-                            className="input" 
-                            type="number"
-                            step="0.01"
-                            {...register("basePrice")}
-                            placeholder="100.00"
-                        />
-                        {errors.basePrice && (
-                            <p className="text-red-400 text-sm mt-1">{errors.basePrice.message}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Preço Atual (R$)*</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Preço (R$) *
+                        </label>
                         <input 
                             className="input" 
                             type="number"
                             step="0.01"
                             {...register("currentPrice")}
-                            placeholder="100.00"
+                            placeholder="0,00"
                         />
                         {errors.currentPrice && (
                             <p className="text-red-400 text-sm mt-1">{errors.currentPrice.message}</p>
@@ -382,99 +330,72 @@ function ServiceFormModal({
                     </div>
                 </div>
 
-                {/* Configurações Operacionais */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Tempo de Preparação (min)</label>
-                        <input 
-                            className="input" 
-                            type="number"
-                            {...register("preparationTime")}
-                            placeholder="10"
-                        />
-                        {errors.preparationTime && (
-                            <p className="text-red-400 text-sm mt-1">{errors.preparationTime.message}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Tempo de Recuperação (min)</label>
-                        <input 
-                            className="input" 
-                            type="number"
-                            {...register("recoveryTime")}
-                            placeholder="15"
-                        />
-                        {errors.recoveryTime && (
-                            <p className="text-red-400 text-sm mt-1">{errors.recoveryTime.message}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Máx. Clientes Simultâneos*</label>
-                        <input 
-                            className="input" 
-                            type="number"
-                            {...register("maxConcurrentClients")}
-                            placeholder="1"
-                        />
-                        {errors.maxConcurrentClients && (
-                            <p className="text-red-400 text-sm mt-1">{errors.maxConcurrentClients.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Informações Adicionais */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Contraindicações</label>
-                        <textarea 
-                            className="input min-h-[80px]" 
-                            {...register("contraindications")}
-                            placeholder="Contraindicações do serviço"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">Benefícios</label>
-                        <textarea 
-                            className="input min-h-[80px]" 
-                            {...register("benefits")}
-                            placeholder="Benefícios do serviço"
-                        />
-                    </div>
-                </div>
-
+                {/* Cor do Serviço */}
                 <div>
-                    <label className="block text-sm text-gray-700 mb-2">Observações</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Cor do Serviço *
+                    </label>
+                    <div className="flex items-center gap-3">
+                        <input 
+                            type="color"
+                            className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
+                            value={watch("color") || "#3B82F6"}
+                            onChange={(e) => setValue("color", e.target.value)}
+                        />
+                        <input 
+                            type="text"
+                            className="input flex-1"
+                            {...register("color")}
+                            placeholder="#3B82F6"
+                        />
+                    </div>
+                    {errors.color && (
+                        <p className="text-red-400 text-sm mt-1">{errors.color.message}</p>
+                    )}
+                </div>
+
+                {/* Status */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Status
+                    </label>
+                    <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                                type="radio" 
+                                value="true"
+                                className="accent-blue-500"
+                                checked={watch("isActive") === true}
+                                onChange={() => setValue("isActive", true)}
+                            />
+                            <span className="text-sm text-gray-700">Ativo</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                                type="radio" 
+                                value="false"
+                                className="accent-blue-500"
+                                checked={watch("isActive") === false}
+                                onChange={() => setValue("isActive", false)}
+                            />
+                            <span className="text-sm text-gray-700">Inativo</span>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Descrição */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Descrição
+                    </label>
                     <textarea 
-                        className="input min-h-[80px]" 
-                        {...register("notes")}
-                        placeholder="Observações gerais"
+                        className="input min-h-[100px]" 
+                        {...register("description")}
+                        placeholder="Descreva o serviço, procedimentos incluídos, contraindicações..."
                     />
                 </div>
 
-                {/* Checkboxes */}
-                <div className="flex items-center gap-6">
-                    <label className="flex items-center gap-2">
-                        <input 
-                            type="checkbox" 
-                            className="accent-blue-500"
-                            {...register("requiresProfessional")}
-                        />
-                        <span className="text-sm text-gray-700">Requer profissional</span>
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                        <input 
-                            type="checkbox" 
-                            className="accent-blue-500"
-                            {...register("isActive")}
-                        />
-                        <span className="text-sm text-gray-700">Serviço ativo</span>
-                    </label>
-                </div>
-
+                {/* Botões */}
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button 
                         type="button" 
@@ -488,7 +409,7 @@ function ServiceFormModal({
                         className="btn btn-primary"
                         disabled={isSubmitting}
                     >
-                        {isSubmitting ? 'Salvando...' : (isEdit ? 'Salvar alterações' : 'Criar serviço')}
+                        {isSubmitting ? 'Salvando...' : (isEdit ? 'Salvar alterações' : 'Criar Serviço')}
                     </button>
                 </div>
             </form>
@@ -586,7 +507,7 @@ export default function ServicesPage() {
                 try {
                     const res = await ServiceService.listServiceCategories({ isActive: true, limit: 100 })
                     setCategoryOptions((res.categories || []).map(c => ({ id: c.id, name: c.name })))
-                } catch (serviceError) {
+                } catch {
                     console.log('Endpoint de categorias de serviços não encontrado, usando categorias de estoque')
                     // Fallback para categorias de estoque
                     const res = await StockService.listCategories({ isActive: true, limit: 100 })
@@ -693,7 +614,12 @@ export default function ServicesPage() {
 
     const handleCreateServiceSubmit = async (data: CreateServiceFormData) => {
         try {
-            await createService(data)
+            // Transformar dados do formulário para o formato esperado pela API
+            const serviceData = {
+                ...data,
+                basePrice: data.currentPrice
+            }
+            await createService(serviceData)
             setShowCreateModal(false)
         } catch (error) {
             throw error
@@ -702,7 +628,12 @@ export default function ServicesPage() {
 
     const handleUpdateServiceSubmit = async (serviceId: string, data: EditServiceFormData) => {
         try {
-            const result = await updateService(serviceId, data)
+            // Transformar dados do formulário para o formato esperado pela API
+            const serviceData = {
+                ...data,
+                basePrice: data.currentPrice
+            }
+            const result = await updateService(serviceId, serviceData)
             
             if (result) {
                 setShowEditModal(false)

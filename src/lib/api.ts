@@ -17,8 +17,16 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    console.log('ApiClient.request called with:', { url, options });
+    // Garantir que não há barras duplas na URL
+    const baseURL = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${baseURL}${cleanEndpoint}`;
+    console.log('ApiClient.request called with:', { 
+      baseURL: this.baseURL,
+      endpoint,
+      finalUrl: url,
+      options 
+    });
     
     // Adiciona headers padrão
     const headers: Record<string, string> = {
@@ -153,7 +161,9 @@ class ApiClient {
     // Se a resposta for vazia, retorna um objeto vazio
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
-      return response.json();
+      const data = await response.json();
+      console.log('ApiClient.handleResponse - Response data:', data);
+      return data;
     }
 
     return {} as T;
