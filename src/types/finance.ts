@@ -90,6 +90,8 @@ export interface PaymentFilters {
   paymentMethod?: PaymentMethod;
   clientId?: string;
   serviceId?: string;
+  partnerId?: string;
+  partnerName?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: string;

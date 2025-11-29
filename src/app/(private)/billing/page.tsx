@@ -2,8 +2,11 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from "react"
 import { useFinance } from "../../../lib/useFinance"
+import { PartnerService } from "../../../lib/partnerService"
+import { exportFinancialReportToPDF, generateDailyFinancialReport } from "../../../lib/pdfExport"
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHOD_COLORS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS } from "../../../types/finance"
-import type { PaymentMethod, Payment } from "../../../types/finance"
+import type { PaymentMethod, Payment, PaymentFilters } from "../../../types/finance"
+import type { Partner } from "../../../types/partners"
 
 // ===== Tipos =====
 type RangeKey = 'today' | 'week' | 'month' | 'custom'
@@ -208,22 +211,148 @@ export default function BillingPage() {
     const [from, setFrom] = useState('')
     const [to, setTo] = useState('')
     const [reportMode, setReportMode] = useState<'COMMISSION' | 'WORKS'>('COMMISSION')
+    const [selectedPartner, setSelectedPartner] = useState<string>('')
+    const [partners, setPartners] = useState<Partner[]>([])
+    const [loadingPartners, setLoadingPartners] = useState(false)
 
     // Hook para dados financeiros
     const { 
         payments, 
         loading, 
         error, 
-        paymentsByMethod, 
         updateFilters 
     } = useFinance()
 
-    // Função para aplicar filtros com debounce
-    const applyFilters = useCallback((newFrom: string, newTo: string) => {
-        if (newFrom && newTo) {
-            updateFilters({ startDate: newFrom, endDate: newTo })
+    // Carregar parceiros
+    useEffect(() => {
+        const loadPartners = async () => {
+            try {
+                setLoadingPartners(true)
+                const response = await PartnerService.listPartners()
+                console.log('Resposta da API de parceiros:', response)
+                
+                // Verificar diferentes formatos de resposta
+                let partnersList: Partner[] = []
+                if (response) {
+                    if (Array.isArray(response)) {
+                        partnersList = response
+                    } else if (response.partners && Array.isArray(response.partners)) {
+                        partnersList = response.partners
+                    } else {
+                        // Tentar acessar propriedade data se existir
+                        const responseWithData = response as { data?: Partner[] }
+                        if (responseWithData.data && Array.isArray(responseWithData.data)) {
+                            partnersList = responseWithData.data
+                        }
+                    }
+                }
+                
+                console.log('Parceiros carregados:', partnersList.length, partnersList)
+                setPartners(partnersList)
+            } catch (err) {
+                console.error('Erro ao carregar parceiros:', err)
+                setPartners([])
+            } finally {
+                setLoadingPartners(false)
+            }
         }
-    }, [updateFilters])
+        loadPartners()
+    }, [])
+
+    // Função para aplicar filtros com debounce
+    const applyFilters = useCallback((newFrom: string, newTo: string, partnerName?: string) => {
+        if (newFrom && newTo) {
+            const filters: PaymentFilters = { startDate: newFrom, endDate: newTo }
+            // Usar o partnerName passado ou o selectedPartner atual
+            const partnerToFilter = partnerName !== undefined ? partnerName : (selectedPartner || undefined)
+            if (partnerToFilter) {
+                filters.partnerName = partnerToFilter
+            }
+            // Se não há parceiro, não incluir partnerName no filtro
+            updateFilters(filters)
+        }
+    }, [updateFilters, selectedPartner])
+
+    // Extrair parceiros únicos dos pagamentos (fallback se a API não retornar)
+    const partnersFromPayments = useMemo(() => {
+        const uniquePartners = new Set<string>()
+        payments.forEach(p => {
+            const partnerName = p.partnerName || p.appointment?.partner?.name
+            if (partnerName) {
+                uniquePartners.add(partnerName)
+            }
+        })
+        return Array.from(uniquePartners).map(name => ({ id: name, name } as Partner))
+    }, [payments])
+
+    // Combinar parceiros da API com parceiros dos pagamentos
+    const allPartners = useMemo(() => {
+        const partnersMap = new Map<string, Partner>()
+        
+        // Adicionar parceiros da API
+        partners.forEach(p => {
+            partnersMap.set(p.name, p)
+        })
+        
+        // Adicionar parceiros dos pagamentos (se não estiverem na lista)
+        partnersFromPayments.forEach(p => {
+            if (!partnersMap.has(p.name)) {
+                partnersMap.set(p.name, p)
+            }
+        })
+        
+        return Array.from(partnersMap.values())
+    }, [partners, partnersFromPayments])
+
+    // Filtrar pagamentos por parceiro selecionado (usar dados já filtrados da API)
+    const filteredPayments = useMemo(() => {
+        // Se não há parceiro selecionado, retornar todos os pagamentos
+        if (!selectedPartner) return payments
+        // Se há parceiro selecionado, a API já deve ter filtrado, mas vamos garantir no frontend também
+        return payments.filter(p => {
+            const paymentPartnerName = p.partnerName || p.appointment?.partner?.name || null
+            return paymentPartnerName === selectedPartner
+        })
+    }, [payments, selectedPartner])
+
+    // Função para exportar PDF
+    const handleExportPDF = useCallback(async () => {
+        if (selectedPartner) {
+            // Se há parceiro selecionado, exportar apenas esse parceiro
+            const title = `Relatório Financeiro - ${selectedPartner}`
+            await exportFinancialReportToPDF(filteredPayments, title, from && to ? { start: from, end: to } : undefined)
+        } else {
+            // Se não há parceiro selecionado, exportar um PDF por parceiro
+            const paymentsByPartner: Record<string, Payment[]> = {}
+            
+            payments.forEach(payment => {
+                const partnerName = payment.partnerName || payment.appointment?.partner?.name || 'Sem parceiro'
+                if (!paymentsByPartner[partnerName]) {
+                    paymentsByPartner[partnerName] = []
+                }
+                paymentsByPartner[partnerName].push(payment)
+            })
+            
+            // Exportar um PDF para cada parceiro que tem pagamentos
+            for (const [partnerName, partnerPayments] of Object.entries(paymentsByPartner)) {
+                if (partnerPayments.length > 0) {
+                    const title = `Relatório Financeiro - ${partnerName}`
+                    await exportFinancialReportToPDF(
+                        partnerPayments, 
+                        title, 
+                        from && to ? { start: from, end: to } : undefined
+                    )
+                    // Pequeno delay entre exportações para evitar problemas
+                    await new Promise(resolve => setTimeout(resolve, 500))
+                }
+            }
+        }
+    }, [payments, filteredPayments, selectedPartner, from, to])
+
+    // Função para gerar relatório diário
+    const dailyReport = useMemo(() => {
+        return generateDailyFinancialReport(filteredPayments)
+    }, [filteredPayments])
 
     // Configurar datas iniciais apenas uma vez
     useEffect(() => {
@@ -236,53 +365,66 @@ export default function BillingPage() {
             setFrom(newFrom)
             setTo(newTo)
             // Aplicar filtros iniciais
-            applyFilters(newFrom, newTo)
+            applyFilters(newFrom, newTo, selectedPartner || undefined)
         } else if (range === 'week') {
             const newFrom = toISODate(startOfWeek(now))
             const newTo = toISODate(endOfWeek(now))
             setFrom(newFrom)
             setTo(newTo)
-            applyFilters(newFrom, newTo)
+            applyFilters(newFrom, newTo, selectedPartner || undefined)
         } else if (range === 'month') {
             const newFrom = toISODate(startOfMonth(now))
             const newTo = toISODate(endOfMonth(now))
             setFrom(newFrom)
             setTo(newTo)
-            applyFilters(newFrom, newTo)
+            applyFilters(newFrom, newTo, selectedPartner || undefined)
         }
-    }, [range, applyFilters]) // range muda apenas quando o usuário seleciona
+    }, [range, applyFilters, selectedPartner]) // range muda apenas quando o usuário seleciona
 
     // Aplicar filtros quando datas customizadas mudarem (com debounce)
     useEffect(() => {
         if (range === 'custom' && from && to) {
             const timeoutId = setTimeout(() => {
-                applyFilters(from, to)
+                applyFilters(from, to, selectedPartner || undefined)
             }, 500) // Debounce de 500ms
 
             return () => clearTimeout(timeoutId)
         }
-    }, [from, to, range, applyFilters])
+    }, [from, to, range, applyFilters, selectedPartner])
 
-    // Agrupar pagamentos por serviço (real)
+    // Aplicar filtro quando parceiro mudar
+    useEffect(() => {
+        if (from && to) {
+            // Quando o parceiro muda, aplicar o filtro com o novo parceiro
+            const filters: PaymentFilters = { startDate: from, endDate: to }
+            if (selectedPartner) {
+                filters.partnerName = selectedPartner
+            }
+            // Se não há parceiro selecionado, não incluir partnerName
+            updateFilters(filters)
+        }
+    }, [selectedPartner, from, to, updateFilters])
+
+    // Agrupar pagamentos por serviço (real) - usar filteredPayments
     const porServico = useMemo(() => {
         const map: Record<string, Payment[]> = {}
 
-        payments.forEach(payment => {
+        filteredPayments.forEach(payment => {
             const serviceKey = payment.service?.name || payment.serviceName || payment.serviceId || 'Sem serviço'
             if (!map[serviceKey]) map[serviceKey] = []
             map[serviceKey].push(payment)
         })
 
         return map
-    }, [payments])
+    }, [filteredPayments])
 
-    // Totais de descontos e parceiro destaque
+    // Totais de descontos e parceiro destaque - usar filteredPayments
     const descontosResumo = useMemo(() => {
         let totalParceiro = 0
         let totalCliente = 0
         const porParceiro: Record<string, number> = {}
 
-        payments.forEach(p => {
+        filteredPayments.forEach(p => {
             const dParc = Number(p.partnerDiscount || 0)
             const dCli = Number(p.clientDiscount || 0)
             totalParceiro += dParc
@@ -300,12 +442,12 @@ export default function BillingPage() {
         })
 
         return { totalParceiro, totalCliente, topPartner, topValue }
-    }, [payments])
+    }, [filteredPayments])
 
     // ===== Relatório de repasse por parceiro =====
     const repassePorParceiro = useMemo(() => {
         const mapa: Record<string, { total: number; quantidade: number }> = {}
-        payments.forEach(p => {
+        filteredPayments.forEach(p => {
             const nome = p.partnerName || '—'
             const valorTrabalho = (p.finalAmount !== undefined ? Number(p.finalAmount) : Number(p.amount)) || 0
             const valorComissao = Number(p.partnerDiscount || 0)
@@ -315,27 +457,9 @@ export default function BillingPage() {
             mapa[nome].quantidade += 1
         })
         return mapa
-    }, [payments, reportMode])
+    }, [filteredPayments, reportMode])
 
     const totalRepasse = useMemo(() => Object.values(repassePorParceiro).reduce((acc, cur) => acc + cur.total, 0), [repassePorParceiro])
-
-    const exportarCSVRepasse = () => {
-        const linhas = [['Parceiro', 'Quantidade', reportMode === 'COMMISSION' ? 'Total Comissão (BRL)' : 'Total Trabalhos (BRL)']]
-        Object.entries(repassePorParceiro).forEach(([parceiro, info]) => {
-            linhas.push([parceiro, String(info.quantidade), String(info.total.toFixed(2))])
-        })
-        linhas.push(['TOTAL', '', String(totalRepasse.toFixed(2))])
-        const csv = linhas.map(l => l.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n')
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = reportMode === 'COMMISSION' ? 'repasse_parceiros_comissao.csv' : 'repasse_parceiros_trabalhos.csv'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-    }
 
     // Loading state
     if (loading && payments.length === 0) {
@@ -362,8 +486,30 @@ export default function BillingPage() {
                 <h1 className="text-2xl font-semibold text-gray-900">Financeiro</h1>
 
                 <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+                    {/* Filtro por parceiro */}
                     <div className="relative">
-                        <select className="input pr-10" value={range} onChange={e => setRange(e.target.value as RangeKey)}>
+                        <select 
+                            className="input appearance-none pr-10" 
+                            value={selectedPartner} 
+                            onChange={e => setSelectedPartner(e.target.value)}
+                            disabled={loadingPartners}
+                        >
+                            <option value="">Todos os parceiros</option>
+                            {allPartners.length > 0 ? (
+                                allPartners.map(partner => (
+                                    <option key={partner.id || partner.name} value={partner.name}>
+                                        {partner.name}
+                                    </option>
+                                ))
+                            ) : (
+                                !loadingPartners && <option disabled>Nenhum parceiro encontrado</option>
+                            )}
+                        </select>
+                        <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-60" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" /></svg>
+                    </div>
+
+                    <div className="relative">
+                        <select className="input appearance-none pr-10" value={range} onChange={e => setRange(e.target.value as RangeKey)}>
                             <option value="today">Hoje</option>
                             <option value="week">Semana</option>
                             <option value="month">Mês</option>
@@ -387,13 +533,61 @@ export default function BillingPage() {
                             </div>
                         </>
                     )}
+
+                    {/* Botão Exportar PDF */}
+                    <button
+                        onClick={handleExportPDF}
+                        className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                        disabled={loading || filteredPayments.length === 0}
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Exportar PDF
+                    </button>
                 </div>
             </div>
+
+            {/* Relatório Diário Resumido */}
+            {range === 'today' && (
+                <div className="rounded-2xl border border-gray-200 bg-white p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">Relatório Financeiro Diário</h2>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                            <div className="text-xs text-gray-600">Total Recebido</div>
+                            <div className="mt-1 text-2xl font-bold text-green-800">{BRL.format(dailyReport.summary.totalReceived)}</div>
+                            <div className="text-xs text-gray-500 mt-1">{dailyReport.summary.totalPayments} pagamentos</div>
+                        </div>
+                        <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                            <div className="text-xs text-gray-600">Total Pendente</div>
+                            <div className="mt-1 text-2xl font-bold text-yellow-800">{BRL.format(dailyReport.summary.totalPending)}</div>
+                        </div>
+                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <div className="text-xs text-gray-600">Total Comissões</div>
+                            <div className="mt-1 text-2xl font-bold text-blue-800">{BRL.format(dailyReport.summary.totalCommission)}</div>
+                        </div>
+                        <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+                            <div className="text-xs text-gray-600">Total de Pagamentos</div>
+                            <div className="mt-1 text-2xl font-bold text-purple-800">{dailyReport.summary.totalPayments}</div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Cards de estatísticas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
                 {Object.entries(PAYMENT_METHOD_COLORS).map(([method]) => {
-                    const data = paymentsByMethod[method as PaymentMethod] || { count: 0, total: 0 }
+                    // Calcular estatísticas dos pagamentos filtrados
+                    const filteredByMethod = filteredPayments.filter(p => p.paymentMethod === method)
+                    const total = filteredByMethod.reduce((sum, p) => {
+                        const finalAmount = p.finalAmount !== undefined 
+                            ? Number(p.finalAmount) 
+                            : Number(p.amount) - Number(p.partnerDiscount || 0) - Number(p.clientDiscount || 0)
+                        return sum + finalAmount
+                    }, 0)
+                    const data = { count: filteredByMethod.length, total }
                     return (
                         <StatBox 
                             key={method}
@@ -436,7 +630,16 @@ export default function BillingPage() {
                         </select>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={exportarCSVRepasse} className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50">Exportar CSV</button>
+                        <button
+                            onClick={handleExportPDF}
+                            className="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+                            disabled={loading || filteredPayments.length === 0}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Exportar PDF
+                        </button>
                     </div>
                 </div>
                 <div className="overflow-x-auto">

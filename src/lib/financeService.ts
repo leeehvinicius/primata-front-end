@@ -18,6 +18,8 @@ export class FinanceService {
     if (filters.paymentMethod) params.append('paymentMethod', filters.paymentMethod);
     if (filters.clientId) params.append('clientId', filters.clientId);
     if (filters.serviceId) params.append('serviceId', filters.serviceId);
+    if (filters.partnerId) params.append('partnerId', filters.partnerId);
+    if (filters.partnerName) params.append('partnerName', filters.partnerName);
     if (filters.startDate) params.append('startDate', filters.startDate);
     if (filters.endDate) params.append('endDate', filters.endDate);
     if (filters.sortBy) params.append('sortBy', filters.sortBy);

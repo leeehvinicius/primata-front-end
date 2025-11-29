@@ -6,7 +6,6 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { format, subDays } from "date-fns";
-import ExportPDFButton from "@/components/ExportPDFButton";
 import { FinanceService } from "@/lib/financeService";
 import { PartnerService } from "@/lib/partnerService";
 import type { Payment, PaymentFilters } from "@/types/finance";
@@ -334,15 +333,6 @@ export default function DashboardPage() {
                         setStart(format(subDays(new Date(), 90), "yyyy-MM-dd"));
                         setEnd(format(new Date(), "yyyy-MM-dd"));
                     }} />
-
-                    {/* Botão Exportar PDF */}
-                    <ExportPDFButton
-                        onExport={async () => {
-                            // Implementar lógica de exportação
-                            console.log('Exportando PDF...');
-                        }}
-                        className="ml-auto"
-                    />
                 </div>
             </div>
             <div id="dash-export" className="space-y-6">
