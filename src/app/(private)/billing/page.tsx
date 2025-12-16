@@ -8,6 +8,7 @@ import { PAYMENT_METHOD_LABELS, PAYMENT_METHOD_COLORS, PAYMENT_STATUS_LABELS, PA
 import type { PaymentMethod, Payment, PaymentFilters } from "../../../types/finance"
 import type { Partner } from "../../../types/partners"
 
+
 // ===== Tipos =====
 type RangeKey = 'today' | 'week' | 'month' | 'custom'
 
