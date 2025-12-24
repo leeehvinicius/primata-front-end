@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { AppointmentService } from '@/lib/appointmentService'
-import type { Appointment, AppointmentListResponse, AppointmentQueryDto, AppointmentStatus } from '@/types/appointments'
+import type { AppointmentListResponse, AppointmentQueryDto, AppointmentStatus } from '@/types/appointments'
 
 const statusOptions: { value: AppointmentStatus | ''; label: string }[] = [
   { value: '', label: 'Todos' },
@@ -259,7 +259,7 @@ export default function AppointmentsListPage() {
   )
 }
 
-function DayColumn({ day, hours, events }: { day: Date; hours: number[]; events: LayoutAppointment[] }) {
+function DayColumn({ hours, events }: { day: Date; hours: number[]; events: LayoutAppointment[] }) {
   return (
     <div className="relative border-r border-slate-200 bg-gradient-to-b from-white to-slate-50" style={{ minHeight: `${3.5 * 16}rem` }}>
       <div className="absolute inset-0 z-[0] pointer-events-none">

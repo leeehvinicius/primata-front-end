@@ -1,6 +1,5 @@
 'use client'
 import { useAuthOnce } from '@/lib/useAuthOnce'
-import { User } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
 export default function Topbar() {

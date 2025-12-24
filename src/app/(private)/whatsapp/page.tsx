@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { WhatsAppService, type WhatsAppStatus, type WhatsAppQRCode, type AppointmentNotificationLog } from '@/lib/whatsappService'
+import { WhatsAppService, type WhatsAppStatus, type AppointmentNotificationLog } from '@/lib/whatsappService'
 import { MessageSquare, QrCode, CheckCircle2, XCircle, RefreshCw, Power, Trash2, Send, Clock, AlertCircle } from 'lucide-react'
 
 export default function WhatsAppPage() {

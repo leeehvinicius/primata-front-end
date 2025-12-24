@@ -173,16 +173,22 @@ function calcTotalCommission(byPartner: Record<string, Payment[]>) {
 
 // ✅ pega cliente de vários formatos possíveis
 function getClientNameFromPayment(p: Payment): string {
-  const anyP = p as any;
+  const anyP = p as unknown as Record<string, unknown>;
+
+  const client = anyP.client as Record<string, unknown> | undefined;
+  const appointment = anyP.appointment as Record<string, unknown> | undefined;
+  const appointmentClient = appointment?.client as Record<string, unknown> | undefined;
+  const customer = anyP.customer as Record<string, unknown> | undefined;
+  const patient = anyP.patient as Record<string, unknown> | undefined;
 
   const name =
-    anyP.client?.name ||
+    client?.name ||
     anyP.clientName ||
-    anyP.appointment?.client?.name ||
+    appointmentClient?.name ||
     anyP.cliente_nome ||
     anyP.customerName ||
-    anyP.customer?.name ||
-    anyP.patient?.name ||
+    customer?.name ||
+    patient?.name ||
     anyP.patientName ||
     "N/A";
 
@@ -387,7 +393,8 @@ export async function exportFinancialReportToPDF(
         const clientName = getClientNameFromPayment(p);
         const displayClient = clientName.length > 42 ? `${clientName.slice(0, 39)}...` : clientName;
 
-        const paymentDate = (p as any).paymentDate || (p as any).createdAt || "";
+        const pRecord = p as unknown as Record<string, unknown>;
+        const paymentDate = String(pRecord.paymentDate || pRecord.createdAt || "");
         const commission = safeToNumber(p.partnerDiscount);
 
         setTextColorHex(doc, THEME.text);
@@ -489,33 +496,34 @@ export function generateDailyFinancialReport(payments: Payment[]): {
   const byStatus: Record<string, { total: number; count: number }> = {};
 
   payments.forEach((payment) => {
-    const amount = safeToNumber((payment as any).amount);
-    const commission = safeToNumber((payment as any).partnerDiscount);
+    const paymentRecord = payment as unknown as Record<string, unknown>;
+    const amount = safeToNumber(paymentRecord.amount);
+    const commission = safeToNumber(paymentRecord.partnerDiscount);
 
     const finalAmount =
-      (payment as any).finalAmount !== undefined
-        ? safeToNumber((payment as any).finalAmount)
-        : amount - commission - safeToNumber((payment as any).clientDiscount);
+      paymentRecord.finalAmount !== undefined
+        ? safeToNumber(paymentRecord.finalAmount)
+        : amount - commission - safeToNumber(paymentRecord.clientDiscount);
 
-    if ((payment as any).paymentStatus === "PAID") {
+    if (paymentRecord.paymentStatus === "PAID") {
       summary.totalReceived += finalAmount;
-    } else if ((payment as any).paymentStatus === "PENDING" || (payment as any).paymentStatus === "OVERDUE") {
+    } else if (paymentRecord.paymentStatus === "PENDING" || paymentRecord.paymentStatus === "OVERDUE") {
       summary.totalPending += finalAmount;
     }
 
     summary.totalCommission += commission;
 
-    const partnerName = (payment as any).partnerName || "Sem parceiro";
+    const partnerName = (paymentRecord.partnerName as string) || "Sem parceiro";
     if (!byPartner[partnerName]) byPartner[partnerName] = { commission: 0, count: 0 };
     byPartner[partnerName].commission += commission;
     byPartner[partnerName].count += 1;
 
-    const method = (payment as any).paymentMethod;
+    const method = paymentRecord.paymentMethod as string;
     if (!byMethod[method]) byMethod[method] = { total: 0, count: 0 };
     byMethod[method].total += finalAmount;
     byMethod[method].count += 1;
 
-    const status = (payment as any).paymentStatus;
+    const status = paymentRecord.paymentStatus as string;
     if (!byStatus[status]) byStatus[status] = { total: 0, count: 0 };
     byStatus[status].total += finalAmount;
     byStatus[status].count += 1;
