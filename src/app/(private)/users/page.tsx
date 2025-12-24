@@ -26,7 +26,9 @@ import {
     Headphones,
     Wrench,
     AlertTriangle,
-    Key
+    Key,
+    Eye,
+    EyeOff
 } from "lucide-react"
 
 // ===== Schemas de Validação =====
@@ -419,6 +421,8 @@ function ResetPasswordModal({
     const [password, setPassword] = React.useState('')
     const [confirmPassword, setConfirmPassword] = React.useState('')
     const [error, setError] = React.useState('')
+    const [showPassword, setShowPassword] = React.useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
 
     const handleSubmit = () => {
         setError('')
@@ -440,6 +444,8 @@ function ResetPasswordModal({
 
     const handleClose = () => {
         setPassword('')
+        setShowPassword(false)
+        setShowConfirmPassword(false)
         setConfirmPassword('')
         setError('')
         onClose()
@@ -463,25 +469,45 @@ function ResetPasswordModal({
                     </p>
                     
                     <div className="space-y-3 mb-4">
-                        <div>
-                            <label className="block text-sm text-gray-700 mb-1">Nova Senha</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="input"
-                                placeholder="Mínimo 6 caracteres"
-                                disabled={loading}
-                            />
+                        <div>div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="input pr-10"
+                                    placeholder="Mínimo 6 caracteres"
+                                    disabled={loading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm text-gray-700 mb-1">Confirmar Senha</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="input"
-                                placeholder="Digite a senha novamente"
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="input pr-10"
+                                    placeholder="Digite a senha novamente"
+                                    disabled={loading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    tabIndex={-1}
+                                >
+                                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div   placeholder="Digite a senha novamente"
                                 disabled={loading}
                             />
                         </div>
