@@ -260,22 +260,23 @@ export class UserService {
   }
 
   // Resetar senha do usuário
-  static async resetPassword(userId: string, newPassword: string): Promise<User> {
-    try {
-      if (!userId || typeof userId !== 'string') {
-        throw new Error('ID do usuário é obrigatório');
-      }
-
-      const sanitizedId = sanitizeId(userId);
-      if (!sanitizedId || (!isValidId(sanitizedId) && !isValidIdLenient(sanitizedId))) {
-        throw new Error('ID do usuário inválido');
-      }
-
-      const response = await api.patch<User>(`/users/${sanitizedId}/reset-password`, { password: newPassword });
-      return response;
-    } catch (error) {
-      console.error('Reset password failed:', error);
-      throw new Error(formatErrorMessage(error));
+// Resetar senha do usuário
+static async resetPassword(userId: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  try {
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('ID do usuário é obrigatório');
     }
+
+    const sanitizedId = sanitizeId(userId);
+    if (!sanitizedId || (!isValidId(sanitizedId) && !isValidIdLenient(sanitizedId))) {
+      throw new Error('ID do usuário inválido');
+    }
+
+    const response = await api.patch<{ success: boolean; message: string }>(`/users/${sanitizedId}/reset-password`, { newPassword });
+    return response;
+  } catch (error) {
+    console.error('Reset password failed:', error);
+    throw new Error(formatErrorMessage(error));
   }
+}
 }

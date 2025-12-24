@@ -44,7 +44,6 @@ const editUserSchema = z.object({
     email: z.string().email("Email inválido"),
     phone: z.string().optional(),
     role: z.string().min(1, "Selecione um perfil"),
-    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional().or(z.literal('')),
     isActive: z.boolean()
 })
 
@@ -269,14 +268,8 @@ function UserFormModal({
     const onSubmit = async (data: Record<string, unknown>) => {
         try {
             if (isEdit && user) {
-                // Remove senha do payload se estiver vazia
-                const updateData = { ...data }
-                if (!updateData.password || updateData.password === '') {
-                    delete updateData.password
-                }
-                
                 try {
-                    await onUpdateUser(user.id, updateData)
+                    await onUpdateUser(user.id, data)
                     toast.success('Usuário atualizado com sucesso!')
                     onClose()
                     reset()
@@ -362,20 +355,20 @@ function UserFormModal({
                         )}
                     </div>
 
-                    <div>
-                        <label className="block text-sm text-gray-700 mb-2">
-                            {isEdit ? 'Nova Senha (opcional)' : 'Senha*'}
-                        </label>
-                        <input 
-                            className="input" 
-                            type="password"
-                            {...register("password")}
-                            placeholder={isEdit ? "Deixe em branco para não alterar" : "Mínimo 6 caracteres"}
-                        />
-                        {errors.password && (
-                            <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
-                        )}
-                    </div>
+                    {!isEdit && (
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-2">Senha*</label>
+                            <input 
+                                className="input" 
+                                type="password"
+                                {...register("password")}
+                                placeholder="Mínimo 6 caracteres"
+                            />
+                            {errors.password && (
+                                <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -729,17 +722,12 @@ export default function UsersPage() {
 
     const handleUpdateUserSubmit = async (userId: string, data: UpdateUserRequest) => {
         try {
-            
-            
-            
             const updateData = {
                 name: data.name,
                 role: data.role,
                 phone: data.phone,
                 isActive: data.isActive
             }
-            
-            
             
             const result = await updateUser(userId, updateData)
             
