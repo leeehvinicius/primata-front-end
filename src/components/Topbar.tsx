@@ -85,14 +85,6 @@ export default function Topbar() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-1">
-                                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                                    Meu Perfil
-                                </button>
-                                <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                                    Configurações
-                                </button>
-                            </div>
                         </div>
                     )}
                 </div>
