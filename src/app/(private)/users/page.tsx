@@ -469,7 +469,9 @@ function ResetPasswordModal({
                     </p>
                     
                     <div className="space-y-3 mb-4">
-                        <div>div className="relative">
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-1">Nova Senha</label>
+                            <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     value={password}
@@ -507,9 +509,7 @@ function ResetPasswordModal({
                                 >
                                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
-                            </div   placeholder="Digite a senha novamente"
-                                disabled={loading}
-                            />
+                            </div>
                         </div>
                         {error && (
                             <p className="text-red-500 text-sm">{error}</p>
