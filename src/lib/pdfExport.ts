@@ -1,75 +1,211 @@
-import jsPDF from 'jspdf';
-import type { Payment } from '../types/finance';
+import jsPDF from "jspdf";
+import type { Payment } from "../types/finance";
 
-const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-/**
- * Exporta relatório financeiro para PDF com apenas valor da comissão do parceiro
- * Não inclui: status, forma de pagamento, desconto do parceiro, nome do cliente
- */
-/**
- * Carrega a logo do sistema e retorna como base64
- */
-async function loadLogoAsBase64(): Promise<string | null> {
-  // Verificar se estamos no navegador
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  
+// ✅ SUA LOGO (fica em /public)
+const DEFAULT_LOGO_FILE = "LOGO BRANCA.png";
+
+/** ===== Cores (SÓ HEX) ===== */
+const THEME = {
+  // ✅ Cor oficial do marketing
+  green: "#659A4C",
+
+  // Derivadas (geradas a partir do verde oficial)
+  greenDark: darkenHex("#659A4C", 0.22),
+  greenSoft: mixHex("#659A4C", "#FFFFFF", 0.85), // bem clarinho (cards)
+
+  // Neutras
+  text: "#232323",
+  grayBg: "#F5F7F8",
+  grayBorder: "#D2D7D9",
+  white: "#FFFFFF",
+  mutedText: "#8C8C8C",
+};
+
+/** ===== Helpers ===== */
+
+function safeToNumber(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function formatDate(dateString: string): string {
+  if (!dateString) return "N/A";
+  const d = new Date(dateString);
+  if (Number.isNaN(d.getTime())) return "N/A";
+  return d.toLocaleDateString("pt-BR");
+}
+
+function getPublicAssetUrl(fileName: string): string {
+  return `${window.location.origin}/${encodeURIComponent(fileName)}`;
+}
+
+async function fetchAsBase64(url: string): Promise<string | null> {
   try {
-    // Usar caminho absoluto ou relativo dependendo do ambiente
-    const logoPath = window.location.origin + '/LOGO_REVITTAH_CARE_SEM_FUNDO.png';
-    const response = await fetch(logoPath);
-    
-    if (!response.ok) {
-      console.warn('Logo não encontrada em:', logoPath);
-      return null;
-    }
-    
-    const blob = await response.blob();
-    return new Promise((resolve) => {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        resolve(base64);
-      };
-      reader.onerror = () => {
-        console.error('Erro ao ler logo como base64');
-        resolve(null);
-      };
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(blob);
     });
-  } catch (error) {
-    console.warn('Erro ao carregar logo, usando apenas texto:', error);
+  } catch {
     return null;
   }
 }
 
+async function loadLogoAsBase64(fileName = DEFAULT_LOGO_FILE): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  return fetchAsBase64(getPublicAssetUrl(fileName));
+}
+
+/** ===== HEX helpers (jsPDF usa RGB, mas aqui você só passa HEX) ===== */
+
+function normalizeHex(hex: string): string {
+  let h = hex.trim();
+  if (!h.startsWith("#")) h = `#${h}`;
+  if (h.length === 4) {
+    // #RGB -> #RRGGBB
+    h = `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}`;
+  }
+  return h.toUpperCase();
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = normalizeHex(hex).slice(1);
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return [r, g, b];
+}
+
+function setFillColorHex(doc: jsPDF, hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  doc.setFillColor(r, g, b);
+}
+
+function setDrawColorHex(doc: jsPDF, hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  doc.setDrawColor(r, g, b);
+}
+
+function setTextColorHex(doc: jsPDF, hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  doc.setTextColor(r, g, b);
+}
+
+/**
+ * Escurece uma cor HEX (0..1)
+ * amount=0.22 => 22% mais escuro
+ */
+function darkenHex(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  const f = (x: number) => Math.max(0, Math.round(x * (1 - amount)));
+  return rgbToHex(f(r), f(g), f(b));
+}
+
+/**
+ * Mistura duas cores HEX
+ * mix=0..1 (quanto mais perto de 1, mais pega a segunda cor)
+ */
+function mixHex(a: string, b: string, mix: number): string {
+  const [ar, ag, ab] = hexToRgb(a);
+  const [br, bg, bb] = hexToRgb(b);
+  const lerp = (x: number, y: number) => Math.round(x + (y - x) * mix);
+  return rgbToHex(lerp(ar, br), lerp(ag, bg), lerp(ab, bb));
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const to = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`.toUpperCase();
+}
+
+function drawRect(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  opts?: { fill?: string; stroke?: string; lineWidth?: number }
+) {
+  const { fill, stroke, lineWidth = 0.4 } = opts || {};
+  if (fill) {
+    setFillColorHex(doc, fill);
+    doc.rect(x, y, w, h, "F");
+  }
+  if (stroke) {
+    setDrawColorHex(doc, stroke);
+    doc.setLineWidth(lineWidth);
+    doc.rect(x, y, w, h, "S");
+  }
+}
+
+function fallbackHeaderText(doc: jsPDF, pageWidth: number) {
+  setTextColorHex(doc, THEME.white);
+  doc.setFont("times", "normal");
+  doc.setFontSize(22);
+  doc.text("REVITTAH", pageWidth / 2, 20, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("C A R E", pageWidth / 2, 28, { align: "center" });
+}
+
+function groupByPartner(payments: Payment[]) {
+  const byPartner: Record<string, Payment[]> = {};
+  for (const p of payments) {
+    const name = p.partnerName || "Sem parceiro";
+    if (!byPartner[name]) byPartner[name] = [];
+    byPartner[name].push(p);
+  }
+  return byPartner;
+}
+
+function calcTotalCommission(byPartner: Record<string, Payment[]>) {
+  let total = 0;
+  for (const arr of Object.values(byPartner)) {
+    for (const p of arr) total += safeToNumber(p.partnerDiscount);
+  }
+  return total;
+}
+
+// ✅ pega cliente de vários formatos possíveis
+function getClientNameFromPayment(p: Payment): string {
+  const anyP = p as any;
+
+  const name =
+    anyP.client?.name ||
+    anyP.clientName ||
+    anyP.appointment?.client?.name ||
+    anyP.cliente_nome ||
+    anyP.customerName ||
+    anyP.customer?.name ||
+    anyP.patient?.name ||
+    anyP.patientName ||
+    "N/A";
+
+  return String(name);
+}
+
+/** ===== Export PDF ===== */
 export async function exportFinancialReportToPDF(
   payments: Payment[],
-  title: string = 'Relatório Financeiro',
+  title: string = "Relatório Financeiro",
   dateRange?: { start: string; end: string }
 ): Promise<void> {
   const doc = new jsPDF();
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
+
+  const margin = 18;
   const maxWidth = pageWidth - 2 * margin;
   let yPos = margin;
 
-  // Paleta de cores moderna
-  const primaryColor = [41, 128, 185]; // Azul primário
-  const secondaryColor = [52, 152, 219]; // Azul secundário
-  const accentColor = [46, 204, 113]; // Verde
-  const headerColor = [44, 62, 80]; // Cinza escuro
-  const textColor = [52, 73, 94]; // Cinza médio
-  const lightGray = [236, 240, 241]; // Cinza claro
-  const borderColor = [189, 195, 199]; // Cinza borda
-  const white = [255, 255, 255];
-
-  // Função para adicionar nova página se necessário
-  const checkPageBreak = (requiredSpace: number = 10) => {
-    if (yPos + requiredSpace > pageHeight - margin - 15) {
+  const checkPageBreak = (requiredSpace = 10) => {
+    if (yPos + requiredSpace > pageHeight - margin - 18) {
       doc.addPage();
       yPos = margin;
       return true;
@@ -77,342 +213,254 @@ export async function exportFinancialReportToPDF(
     return false;
   };
 
-  // Função auxiliar para desenhar retângulos estilizados
-  const drawStyledRect = (x: number, y: number, w: number, h: number, fillColor: number[], strokeColor?: number[], lineWidth: number = 0.5) => {
-    if (fillColor && fillColor.length === 3) {
-      doc.setFillColor(fillColor[0], fillColor[1], fillColor[2]);
-      doc.rect(x, y, w, h, 'F');
-    }
-    if (strokeColor && strokeColor.length === 3) {
-      doc.setDrawColor(strokeColor[0], strokeColor[1], strokeColor[2]);
-      doc.setLineWidth(lineWidth);
-      doc.rect(x, y, w, h, 'S');
-    }
-  };
+  // ===== Header =====
+  const headerH = 42;
+  setFillColorHex(doc, THEME.green);
+  doc.rect(0, 0, pageWidth, headerH, "F");
 
-  // ===== CABEÇALHO ESTILIZADO =====
-  // Barra superior colorida (mais alta para logo)
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, pageWidth, 50, 'F');
-  
-  // Tentar adicionar logo
-  const logoBase64 = await loadLogoAsBase64();
+  const logoBase64 = await loadLogoAsBase64(DEFAULT_LOGO_FILE);
   if (logoBase64) {
     try {
-      // Adicionar logo à esquerda (tamanho 30x30)
-      doc.addImage(logoBase64, 'PNG', margin, 10, 30, 30);
-      // Ajustar posição do texto para não sobrepor a logo
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('REVITTAH CARE', margin + 35, 20);
-      
-      // Título do relatório
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text(title, margin + 35, 35);
-    } catch (error) {
-      console.error('Erro ao adicionar logo:', error);
-      // Fallback: apenas texto
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.text('REVITTAH CARE', margin, 18);
-      
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.text(title, margin, 32);
+      const logoW = 80;
+      const logoH = 18;
+      doc.addImage(logoBase64, "PNG", (pageWidth - logoW) / 2, 11, logoW, logoH);
+    } catch {
+      fallbackHeaderText(doc, pageWidth);
     }
   } else {
-    // Sem logo: apenas texto
-    doc.setTextColor(white[0], white[1], white[2]);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('REVITTAH CARE', margin, 18);
-    
-    // Título do relatório
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text(title, margin, 32);
+    fallbackHeaderText(doc, pageWidth);
   }
-  
-  // Informações do período (se houver)
+
+  // ===== Title =====
+  yPos = headerH + 16;
+
+  setTextColorHex(doc, THEME.text);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(title, pageWidth / 2, yPos, { align: "center" });
+
   if (dateRange) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const dateText = `${formatDate(dateRange.start)} a ${formatDate(dateRange.end)}`;
-    doc.text(dateText, pageWidth - margin, 35, { align: 'right' });
-  }
-  
-  yPos = 60;
-
-  // Data de geração (subtítulo)
-  doc.setFontSize(9);
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.setFont('helvetica', 'italic');
-  const generatedAt = `Gerado em ${new Date().toLocaleString('pt-BR', { 
-    day: '2-digit', 
-    month: '2-digit', 
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })}`;
-  doc.text(generatedAt, margin, yPos);
-  
-  // Linha divisória sutil
-  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPos + 5, pageWidth - margin, yPos + 5);
-  yPos += 15;
-
-  // Agrupar por parceiro
-  const paymentsByPartner: Record<string, Payment[]> = {};
-  payments.forEach(payment => {
-    const partnerName = payment.partnerName || 'Sem parceiro';
-    if (!paymentsByPartner[partnerName]) {
-      paymentsByPartner[partnerName] = [];
-    }
-    paymentsByPartner[partnerName].push(payment);
-  });
-
-  // Calcular totais
-  let totalCommission = 0;
-  Object.values(paymentsByPartner).forEach(partnerPayments => {
-    partnerPayments.forEach(payment => {
-      const commission = Number(payment.partnerDiscount || 0);
-      totalCommission += commission;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(`${formatDate(dateRange.start)} a ${formatDate(dateRange.end)}`, pageWidth - margin, yPos + 10, {
+      align: "right",
     });
-  });
-
-  // ===== CARDS DE RESUMO =====
-  checkPageBreak(35);
-  
-  const cardHeight = 25;
-  const cardWidth = (maxWidth - 10) / 3; // 3 cards com espaçamento
-  const cardY = yPos;
-  
-  // Card 1: Total de Parceiros
-  drawStyledRect(margin, cardY, cardWidth, cardHeight, lightGray, borderColor, 0.5);
-  
-  doc.setFontSize(8);
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Total de Parceiros', margin + 8, cardY + 8);
-  doc.setFontSize(16);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setFont('helvetica', 'bold');
-  doc.text(String(Object.keys(paymentsByPartner).length), margin + 8, cardY + 18);
-  
-  // Card 2: Total de Registros
-  drawStyledRect(margin + cardWidth + 5, cardY, cardWidth, cardHeight, lightGray, borderColor, 0.5);
-  
-  doc.setFontSize(8);
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Total de Registros', margin + cardWidth + 13, cardY + 8);
-  doc.setFontSize(16);
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.setFont('helvetica', 'bold');
-  doc.text(String(payments.length), margin + cardWidth + 13, cardY + 18);
-  
-  // Card 3: Total de Comissões
-  drawStyledRect(margin + (cardWidth + 5) * 2, cardY, cardWidth, cardHeight, [230, 245, 255], accentColor, 1);
-  
-  doc.setFontSize(8);
-  doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Total de Comissões', margin + (cardWidth + 5) * 2 + 8, cardY + 8);
-  doc.setFontSize(14);
-  doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-  doc.setFont('helvetica', 'bold');
-  const totalText = BRL.format(totalCommission);
-  // Ajustar tamanho se necessário
-  const totalTextWidth = doc.getTextWidth(totalText);
-  if (totalTextWidth > cardWidth - 16) {
-    doc.setFontSize(11);
   }
-  doc.text(totalText, margin + (cardWidth + 5) * 2 + 8, cardY + 18);
-  
-  yPos = cardY + cardHeight + 15;
-  
-  // Linha divisória estilizada
-  doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.setLineWidth(2);
-  doc.line(margin, yPos, margin + 50, yPos);
-  yPos += 12;
 
-  // ===== TABELAS POR PARCEIRO =====
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.text(
+    `Gerado em ${new Date().toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`,
+    margin,
+    yPos + 12
+  );
+
+  setDrawColorHex(doc, THEME.grayBorder);
+  doc.setLineWidth(0.4);
+  doc.line(margin, yPos + 18, pageWidth - margin, yPos + 18);
+
+  yPos += 26;
+
+  // ===== Data =====
+  const paymentsByPartner = groupByPartner(payments);
+  const totalCommission = calcTotalCommission(paymentsByPartner);
+
+  // ===== Cards =====
+  checkPageBreak(36);
+
+  const cardH = 20;
+  const gap = 6;
+  const cardW = (maxWidth - gap * 2) / 3;
+  const cardY = yPos;
+
+  // 1
+  drawRect(doc, margin, cardY, cardW, cardH, { fill: THEME.grayBg, stroke: THEME.grayBorder, lineWidth: 0.5 });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  setTextColorHex(doc, THEME.text);
+  doc.text("Total de Parceiros", margin + 6, cardY + 8);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(String(Object.keys(paymentsByPartner).length), margin + 6, cardY + 16);
+
+  // 2
+  drawRect(doc, margin + cardW + gap, cardY, cardW, cardH, {
+    fill: THEME.grayBg,
+    stroke: THEME.grayBorder,
+    lineWidth: 0.5,
+  });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text("Total de Registros", margin + cardW + gap + 6, cardY + 8);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(String(payments.length), margin + cardW + gap + 6, cardY + 16);
+
+  // 3 (destaque)
+  drawRect(doc, margin + (cardW + gap) * 2, cardY, cardW, cardH, {
+    fill: THEME.greenSoft,
+    stroke: THEME.green,
+    lineWidth: 1,
+  });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  setTextColorHex(doc, THEME.text);
+  doc.text("Total de Comissões", margin + (cardW + gap) * 2 + 6, cardY + 8);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  setTextColorHex(doc, THEME.green);
+  doc.text(BRL.format(totalCommission), margin + (cardW + gap) * 2 + 6, cardY + 16);
+
+  yPos = cardY + cardH + 12;
+
+  // ===== Linha + tracinho verde =====
+  setDrawColorHex(doc, THEME.grayBorder);
+  doc.setLineWidth(0.4);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+
+  setDrawColorHex(doc, THEME.green);
+  doc.setLineWidth(2.0);
+  doc.line(margin, yPos, margin + 45, yPos);
+
+  yPos += 10;
+
+  // ===== Tables by partner =====
   Object.entries(paymentsByPartner)
     .sort(([, a], [, b]) => {
-      const totalA = a.reduce((sum, p) => sum + Number(p.partnerDiscount || 0), 0);
-      const totalB = b.reduce((sum, p) => sum + Number(p.partnerDiscount || 0), 0);
-      return totalB - totalA; // Ordenar por total decrescente
+      const ta = a.reduce((s, p) => s + safeToNumber(p.partnerDiscount), 0);
+      const tb = b.reduce((s, p) => s + safeToNumber(p.partnerDiscount), 0);
+      return tb - ta;
     })
     .forEach(([partnerName, partnerPayments]) => {
-      checkPageBreak(35);
+      checkPageBreak(46);
 
-      // Calcular total do parceiro
-      const partnerTotal = partnerPayments.reduce(
-        (sum, p) => sum + Number(p.partnerDiscount || 0),
-        0
-      );
+      const partnerTotal = partnerPayments.reduce((s, p) => s + safeToNumber(p.partnerDiscount), 0);
 
-      // Cabeçalho do parceiro com fundo colorido
-      const headerHeight = 12;
-      drawStyledRect(margin, yPos, maxWidth, headerHeight, primaryColor);
-      
-      doc.setFontSize(12);
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFont('helvetica', 'bold');
-      doc.text(partnerName, margin + 8, yPos + 8);
-      
-      // Total do parceiro no cabeçalho (à direita)
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      const totalText = `Total: ${BRL.format(partnerTotal)}`;
-      doc.text(totalText, pageWidth - margin - 8, yPos + 8, { align: 'right' });
-      
-      yPos += headerHeight + 2;
+      // partner header
+      const partnerHeaderH = 8;
+      drawRect(doc, margin, yPos, maxWidth, partnerHeaderH, { fill: THEME.green });
 
-      // Tabela de comissões
-      const tableTop = yPos;
-      const rowHeight = 8;
-      const colWidths = [maxWidth * 0.45, maxWidth * 0.25, maxWidth * 0.30];
-      let currentY = tableTop;
-
-      // Cabeçalho da tabela estilizado
-      drawStyledRect(margin, currentY, maxWidth, rowHeight, lightGray, borderColor, 0.5);
-      
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Serviço', margin + 8, currentY + 6);
-      doc.text('Data', margin + colWidths[0] + 8, currentY + 6);
-      doc.text('Comissão', margin + colWidths[0] + colWidths[1] + 8, currentY + 6);
-      currentY += rowHeight;
+      setTextColorHex(doc, THEME.white);
+      doc.text(partnerName, margin + 6, yPos + 5.8);
 
-      // Linhas da tabela
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      
-      partnerPayments.forEach((payment, index) => {
-        checkPageBreak(rowHeight + 2);
-        
-        // Alternar cor de fundo e bordas
-        const rowFillColor = index % 2 === 0 ? white : lightGray;
-        drawStyledRect(margin, currentY, maxWidth, rowHeight, rowFillColor, borderColor, 0.1);
+      doc.text(`Total: ${BRL.format(partnerTotal)}`, pageWidth - margin - 6, yPos + 5.8, { align: "right" });
 
-        const serviceName = payment.service?.name || payment.serviceName || 'N/A';
-        const paymentDate = payment.paymentDate || payment.createdAt || '';
-        const commission = Number(payment.partnerDiscount || 0);
+      yPos += partnerHeaderH;
 
-        // Truncar texto se necessário
-        const maxServiceLength = 30;
-        const displayService = serviceName.length > maxServiceLength 
-          ? serviceName.substring(0, maxServiceLength - 3) + '...' 
-          : serviceName;
+      const rowH = 7;
+      const colW = [maxWidth * 0.52, maxWidth * 0.22, maxWidth * 0.26];
 
-        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-        doc.text(displayService, margin + 8, currentY + 6);
-        doc.text(formatDate(paymentDate), margin + colWidths[0] + 8, currentY + 6);
-        
-        // Valor destacado
-        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-        doc.setFont('helvetica', 'bold');
-        doc.text(BRL.format(commission), margin + colWidths[0] + colWidths[1] + 8, currentY + 6);
-        
-        currentY += rowHeight;
+      // table header
+      drawRect(doc, margin, yPos, maxWidth, rowH, { fill: THEME.grayBg, stroke: THEME.grayBorder, lineWidth: 0.4 });
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.2);
+      setTextColorHex(doc, THEME.text);
+      doc.text("Cliente", margin + 6, yPos + 5.1);
+      doc.text("Data", margin + colW[0] + 6, yPos + 5.1);
+      doc.text("Comissão", margin + colW[0] + colW[1] + 6, yPos + 5.1);
+
+      yPos += rowH;
+
+      // rows
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.2);
+
+      partnerPayments.forEach((p, idx) => {
+        checkPageBreak(rowH + 6);
+
+        const fill = idx % 2 === 0 ? THEME.white : THEME.grayBg;
+        drawRect(doc, margin, yPos, maxWidth, rowH, { fill, stroke: THEME.grayBorder, lineWidth: 0.1 });
+
+        // ✅ CLIENTE (no lugar do serviço)
+        const clientName = getClientNameFromPayment(p);
+        const displayClient = clientName.length > 42 ? `${clientName.slice(0, 39)}...` : clientName;
+
+        const paymentDate = (p as any).paymentDate || (p as any).createdAt || "";
+        const commission = safeToNumber(p.partnerDiscount);
+
+        setTextColorHex(doc, THEME.text);
+        doc.text(displayClient, margin + 6, yPos + 5.1);
+        doc.text(formatDate(paymentDate), margin + colW[0] + 6, yPos + 5.1);
+
+        doc.setFont("helvetica", "bold");
+        setTextColorHex(doc, THEME.green);
+        doc.text(BRL.format(commission), margin + colW[0] + colW[1] + 6, yPos + 5.1);
+        doc.setFont("helvetica", "normal");
+
+        yPos += rowH;
       });
 
-      // Total do parceiro destacado
-      checkPageBreak(rowHeight + 5);
-      drawStyledRect(margin, currentY, maxWidth, rowHeight + 2, [245, 250, 255], primaryColor, 1);
-      currentY += 2;
-      
-      doc.setFontSize(10);
-      doc.setTextColor(headerColor[0], headerColor[1], headerColor[2]);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Total do Parceiro:', margin + colWidths[0] + colWidths[1] - 50, currentY + 6);
-      doc.setFontSize(11);
-      doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.text(BRL.format(partnerTotal), margin + colWidths[0] + colWidths[1] + 8, currentY + 6);
-      currentY += rowHeight + 8;
+      // partner total row
+      checkPageBreak(12);
+      drawRect(doc, margin, yPos, maxWidth, rowH + 0.5, { fill: THEME.white, stroke: THEME.green, lineWidth: 1 });
 
-      yPos = currentY;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.8);
+      setTextColorHex(doc, THEME.text);
+      doc.text("Total do Parceiro:", margin + colW[0] + colW[1] - 45, yPos + 5.1);
+
+      setTextColorHex(doc, THEME.green);
+      doc.text(BRL.format(partnerTotal), margin + colW[0] + colW[1] + 6, yPos + 5.1);
+
+      yPos += rowH + 7;
     });
 
-  // ===== TOTAL GERAL DESTACADO =====
+  // ===== Total geral =====
   if (Object.keys(paymentsByPartner).length > 0) {
     checkPageBreak(20);
-    
-    drawStyledRect(margin, yPos, maxWidth, 15, accentColor);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(white[0], white[1], white[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL GERAL DE COMISSÕES', margin + 8, yPos + 10);
-    
-    doc.setFontSize(14);
-    doc.text(BRL.format(totalCommission), pageWidth - margin - 8, yPos + 10, { align: 'right' });
-    
-    yPos += 20;
+
+    drawRect(doc, margin, yPos, maxWidth, 12, { fill: THEME.green });
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    setTextColorHex(doc, THEME.white);
+    doc.text("TOTAL GERAL DE COMISSÕES", margin + 6, yPos + 8.4);
+
+    doc.setFontSize(10);
+    doc.text(BRL.format(totalCommission), pageWidth - margin - 6, yPos + 8.4, { align: "right" });
+
+    yPos += 16;
   }
 
-  // ===== RODAPÉ ESTILIZADO =====
+  // ===== Footer =====
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    
-    // Linha superior do rodapé
-    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
-    doc.setLineWidth(0.5);
-    doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
-    
-    // Texto do rodapé
+
+    setDrawColorHex(doc, THEME.grayBorder);
+    doc.setLineWidth(0.4);
+    doc.line(margin, pageHeight - 18, pageWidth - margin, pageHeight - 18);
+
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `Página ${i} de ${totalPages}`,
-      pageWidth / 2,
-      pageHeight - 12,
-      { align: 'center' }
-    );
-    
-    // Informação adicional no rodapé
+    setTextColorHex(doc, THEME.text);
+    doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+
     doc.setFontSize(7);
-    doc.setTextColor(150, 150, 150);
-    doc.text(
-      'Revittah Care - Relatório gerado automaticamente pelo sistema',
-      pageWidth / 2,
-      pageHeight - 6,
-      { align: 'center' }
-    );
+    setTextColorHex(doc, THEME.mutedText);
+    doc.text("Revittah Care - Relatório gerado automaticamente pelo sistema", pageWidth / 2, pageHeight - 5, {
+      align: "center",
+    });
   }
 
-  // Salvar PDF
-  const fileName = `relatorio_financeiro_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
+  doc.save(`relatorio_financeiro_${new Date().toISOString().split("T")[0]}.pdf`);
 }
 
 /**
- * Formata data para exibição
- */
-function formatDate(dateString: string): string {
-  if (!dateString) return 'N/A';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
-  } catch {
-    return dateString;
-  }
-}
-
-/**
- * Gera relatório financeiro diário otimizado (para e-mail)
+ * Gera relatório financeiro diário (para e-mail)
+ * (mantive sua assinatura/retorno)
  */
 export function generateDailyFinancialReport(payments: Payment[]): {
   summary: {
@@ -440,43 +488,35 @@ export function generateDailyFinancialReport(payments: Payment[]): {
   const byMethod: Record<string, { total: number; count: number }> = {};
   const byStatus: Record<string, { total: number; count: number }> = {};
 
-  payments.forEach(payment => {
-    const amount = Number(payment.amount || 0);
-    const commission = Number(payment.partnerDiscount || 0);
-    const finalAmount = payment.finalAmount !== undefined 
-      ? Number(payment.finalAmount) 
-      : amount - Number(payment.partnerDiscount || 0) - Number(payment.clientDiscount || 0);
+  payments.forEach((payment) => {
+    const amount = safeToNumber((payment as any).amount);
+    const commission = safeToNumber((payment as any).partnerDiscount);
 
-    // Totais por status
-    if (payment.paymentStatus === 'PAID') {
+    const finalAmount =
+      (payment as any).finalAmount !== undefined
+        ? safeToNumber((payment as any).finalAmount)
+        : amount - commission - safeToNumber((payment as any).clientDiscount);
+
+    if ((payment as any).paymentStatus === "PAID") {
       summary.totalReceived += finalAmount;
-    } else if (payment.paymentStatus === 'PENDING' || payment.paymentStatus === 'OVERDUE') {
+    } else if ((payment as any).paymentStatus === "PENDING" || (payment as any).paymentStatus === "OVERDUE") {
       summary.totalPending += finalAmount;
     }
 
     summary.totalCommission += commission;
 
-    // Por parceiro
-    const partnerName = payment.partnerName || 'Sem parceiro';
-    if (!byPartner[partnerName]) {
-      byPartner[partnerName] = { commission: 0, count: 0 };
-    }
+    const partnerName = (payment as any).partnerName || "Sem parceiro";
+    if (!byPartner[partnerName]) byPartner[partnerName] = { commission: 0, count: 0 };
     byPartner[partnerName].commission += commission;
     byPartner[partnerName].count += 1;
 
-    // Por método de pagamento
-    const method = payment.paymentMethod;
-    if (!byMethod[method]) {
-      byMethod[method] = { total: 0, count: 0 };
-    }
+    const method = (payment as any).paymentMethod;
+    if (!byMethod[method]) byMethod[method] = { total: 0, count: 0 };
     byMethod[method].total += finalAmount;
     byMethod[method].count += 1;
 
-    // Por status
-    const status = payment.paymentStatus;
-    if (!byStatus[status]) {
-      byStatus[status] = { total: 0, count: 0 };
-    }
+    const status = (payment as any).paymentStatus;
+    if (!byStatus[status]) byStatus[status] = { total: 0, count: 0 };
     byStatus[status].total += finalAmount;
     byStatus[status].count += 1;
   });
@@ -494,4 +534,3 @@ export function generateDailyFinancialReport(payments: Payment[]): {
     byStatus,
   };
 }
-
