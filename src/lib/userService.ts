@@ -258,4 +258,24 @@ export class UserService {
   static async getUsersSorted(sortBy: string, sortOrder: 'asc' | 'desc' = 'asc', filters: Omit<UserFilters, 'sortBy' | 'sortOrder'> = {}): Promise<UserListResponse> {
     return this.listUsers({ ...filters, sortBy, sortOrder });
   }
+
+  // Resetar senha do usuário
+  static async resetPassword(userId: string, newPassword: string): Promise<User> {
+    try {
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('ID do usuário é obrigatório');
+      }
+
+      const sanitizedId = sanitizeId(userId);
+      if (!sanitizedId || (!isValidId(sanitizedId) && !isValidIdLenient(sanitizedId))) {
+        throw new Error('ID do usuário inválido');
+      }
+
+      const response = await api.patch<User>(`/users/${sanitizedId}/reset-password`, { password: newPassword });
+      return response;
+    } catch (error) {
+      console.error('Reset password failed:', error);
+      throw new Error(formatErrorMessage(error));
+    }
+  }
 }

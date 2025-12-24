@@ -7,6 +7,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { useUsers } from "@/lib/useUsers"
 import { User, CreateUserRequest, UpdateUserRequest } from "@/types/users"
+import { UserService } from "@/lib/userService"
 import LoadingSpinner from "@/components/ui/LoadingSpinner"
 import Modal from "@/components/ui/Modal"
 import { 
@@ -24,7 +25,8 @@ import {
     Stethoscope,
     Headphones,
     Wrench,
-    AlertTriangle
+    AlertTriangle,
+    Key
 } from "lucide-react"
 
 // ===== Schemas de Validação =====
@@ -42,6 +44,7 @@ const editUserSchema = z.object({
     email: z.string().email("Email inválido"),
     phone: z.string().optional(),
     role: z.string().min(1, "Selecione um perfil"),
+    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional().or(z.literal('')),
     isActive: z.boolean()
 })
 
@@ -116,13 +119,14 @@ function StatCard({ title, value, icon: Icon, color, trend }: {
     )
 }
 
-function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
+function UserRow({ user, onEdit, onToggleStatus, onDelete, onResetPassword }: {
     user: User
     onEdit: (user: User) => void
     onToggleStatus: (userId: string) => void
     onDelete: (userId: string) => void
+    onResetPassword: (userId: string) => void
 }) {
-    const userRole = user.role || 'SERVICOS_GERAIS'
+    const userRole = user.profile?.role || 'SERVICOS_GERAIS'
     const config = roleConfig[userRole as UserRole] || roleConfig['SERVICOS_GERAIS']
     const Icon = config.icon
 
@@ -146,10 +150,10 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
                 </div>
             </td>
             <td className="py-4 pr-4">
-                {user.phone ? (
+                {user.profile?.phone ? (
                     <div className="flex items-center gap-2 text-gray-600">
                         <Phone className="w-4 h-4" />
-                        <span>{user.phone}</span>
+                        <span>{user.profile.phone}</span>
                     </div>
                 ) : (
                     <span className="text-gray-400">-</span>
@@ -157,11 +161,11 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
             </td>
             <td className="py-4 pr-4">
                 <div className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
-                    user.isActive === true
+                    user.profile?.isActive === true
                         ? 'bg-green-100 text-green-700 border border-green-200' 
                         : 'bg-red-100 text-red-700 border border-red-200'
                 }`}>
-                    {user.isActive === true ? 'Ativo' : 'Inativo'}
+                    {user.profile?.isActive === true ? 'Ativo' : 'Inativo'}
                 </div>
             </td>
             <td className="py-4 pr-4 text-gray-500 text-sm">
@@ -177,15 +181,22 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete }: {
                         <Edit size={16} />
                     </button>
                     <button
+                        onClick={() => onResetPassword(user.id)}
+                        className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+                        title="Resetar senha"
+                    >
+                        <Key size={16} />
+                    </button>
+                    <button
                         onClick={() => onToggleStatus(user.id)}
                         className={`p-2 rounded-lg transition-colors ${
-                            user.isActive === true
+                            user.profile?.isActive === true
                                 ? 'text-gray-400 hover:text-red-600 hover:bg-red-100' 
                                 : 'text-gray-400 hover:text-green-600 hover:bg-green-100'
                         }`}
-                        title={user.isActive === true ? 'Desativar usuário' : 'Ativar usuário'}
+                        title={user.profile?.isActive === true ? 'Desativar usuário' : 'Ativar usuário'}
                     >
-                        {user.isActive === true ? <UserX size={16} /> : <UserCheck size={16} />}
+                        {user.profile?.isActive === true ? <UserX size={16} /> : <UserCheck size={16} />}
                     </button>
                     <button
                         onClick={() => onDelete(user.id)}
@@ -236,17 +247,14 @@ function UserFormModal({
 
     // Preenche o formulário quando editar
     React.useEffect(() => {
-        
         if (open && user && isEdit) {
-            
             const formData = {
                 name: user.name || '',
                 email: user.email || '',
-                phone: user.phone || '',
-                role: user.role || '',
-                isActive: user.isActive !== false
+                phone: user.profile?.phone || '',
+                role: user.profile?.role || '',
+                isActive: user.profile?.isActive !== false
             }
-            
             
             setValue('name', formData.name)
             setValue('email', formData.email)
@@ -260,17 +268,15 @@ function UserFormModal({
 
     const onSubmit = async (data: Record<string, unknown>) => {
         try {
-            
-            
-            
-            
             if (isEdit && user) {
-                
-                
+                // Remove senha do payload se estiver vazia
+                const updateData = { ...data }
+                if (!updateData.password || updateData.password === '') {
+                    delete updateData.password
+                }
                 
                 try {
-                    await onUpdateUser(user.id, data)
-                    
+                    await onUpdateUser(user.id, updateData)
                     toast.success('Usuário atualizado com sucesso!')
                     onClose()
                     reset()
@@ -356,20 +362,20 @@ function UserFormModal({
                         )}
                     </div>
 
-                    {!isEdit && (
-                        <div>
-                            <label className="block text-sm text-gray-700 mb-2">Senha*</label>
-                            <input 
-                                className="input" 
-                                type="password"
-                                {...register("password")}
-                                placeholder="Mínimo 6 caracteres"
-                            />
-                            {errors.password && (
-                                <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
-                            )}
-                        </div>
-                    )}
+                    <div>
+                        <label className="block text-sm text-gray-700 mb-2">
+                            {isEdit ? 'Nova Senha (opcional)' : 'Senha*'}
+                        </label>
+                        <input 
+                            className="input" 
+                            type="password"
+                            {...register("password")}
+                            placeholder={isEdit ? "Deixe em branco para não alterar" : "Mínimo 6 caracteres"}
+                        />
+                        {errors.password && (
+                            <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -399,6 +405,116 @@ function UserFormModal({
                     </button>
                 </div>
             </form>
+        </Modal>
+    )
+}
+
+// Modal de resetar senha
+function ResetPasswordModal({ 
+    open, 
+    onClose, 
+    onConfirm, 
+    userName,
+    loading 
+}: {
+    open: boolean
+    onClose: () => void
+    onConfirm: (password: string) => void
+    userName: string
+    loading: boolean
+}) {
+    const [password, setPassword] = React.useState('')
+    const [confirmPassword, setConfirmPassword] = React.useState('')
+    const [error, setError] = React.useState('')
+
+    const handleSubmit = () => {
+        setError('')
+        
+        if (!password || password.length < 6) {
+            setError('A senha deve ter pelo menos 6 caracteres')
+            return
+        }
+        
+        if (password !== confirmPassword) {
+            setError('As senhas não coincidem')
+            return
+        }
+        
+        onConfirm(password)
+        setPassword('')
+        setConfirmPassword('')
+    }
+
+    const handleClose = () => {
+        setPassword('')
+        setConfirmPassword('')
+        setError('')
+        onClose()
+    }
+
+    return (
+        <Modal
+            open={open}
+            onClose={handleClose}
+            title="Resetar Senha"
+            className="max-w-md"
+        >
+            <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-amber-100 border border-amber-200">
+                    <Key className="w-6 h-6 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                    <h4 className="text-gray-900 font-medium mb-2">Nova senha para {userName}</h4>
+                    <p className="text-gray-600 text-sm mb-4">
+                        Digite a nova senha para o usuário. A senha deve ter pelo menos 6 caracteres.
+                    </p>
+                    
+                    <div className="space-y-3 mb-4">
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-1">Nova Senha</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="input"
+                                placeholder="Mínimo 6 caracteres"
+                                disabled={loading}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-1">Confirmar Senha</label>
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="input"
+                                placeholder="Digite a senha novamente"
+                                disabled={loading}
+                            />
+                        </div>
+                        {error && (
+                            <p className="text-red-500 text-sm">{error}</p>
+                        )}
+                    </div>
+                    
+                    <div className="flex gap-3">
+                        <button 
+                            className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 flex-1" 
+                            onClick={handleClose}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            className="btn bg-amber-600 hover:bg-amber-700 text-white flex-1" 
+                            onClick={handleSubmit}
+                            disabled={loading}
+                        >
+                            {loading ? 'Salvando...' : 'Resetar Senha'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </Modal>
     )
 }
@@ -469,6 +585,17 @@ export default function UsersPage() {
         updateUser,
     } = useUsers()
 
+    // Debug: Ver dados retornados
+    console.log('📊 DADOS DA TABELA:', {
+        users,
+        totalUsuarios: users?.length,
+        loading,
+        error,
+        pagination,
+        stats,
+        roles
+    })
+
     const [searchTerm, setSearchTerm] = useState("")
     const [selectedRole, setSelectedRole] = useState<string>("")
     const [selectedStatus, setSelectedStatus] = useState<string>("")
@@ -478,8 +605,11 @@ export default function UsersPage() {
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false)
     const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined)
     const [userToDelete, setUserToDelete] = useState<User | null>(null)
+    const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null)
+    const [resettingPassword, setResettingPassword] = useState(false)
 
     // ===== Handlers =====
     const handleSearch = () => {
@@ -552,6 +682,34 @@ export default function UsersPage() {
     const handleCreateUser = () => {
         setSelectedUser(undefined)
         setShowCreateModal(true)
+    }
+
+    const handleResetPassword = (userId: string) => {
+        const user = users.find(u => u.id === userId)
+        if (user) {
+            setUserToResetPassword(user)
+            setShowResetPasswordModal(true)
+        } else {
+            console.error('User not found for ID:', userId)
+            toast.error('Usuário não encontrado')
+        }
+    }
+
+    const handleConfirmResetPassword = async (newPassword: string) => {
+        if (!userToResetPassword) return
+        
+        setResettingPassword(true)
+        try {
+            await UserService.resetPassword(userToResetPassword.id, newPassword)
+            toast.success('Senha resetada com sucesso!')
+            setShowResetPasswordModal(false)
+            setUserToResetPassword(null)
+        } catch (error) {
+            console.error('Reset password error:', error)
+            toast.error(error instanceof Error ? error.message : 'Erro ao resetar senha')
+        } finally {
+            setResettingPassword(false)
+        }
     }
 
     const handleCreateUserSubmit = async (data: CreateUserRequest) => {
@@ -748,6 +906,7 @@ export default function UsersPage() {
                                         onEdit={handleEditUser}
                                         onToggleStatus={handleToggleStatus}
                                         onDelete={handleDeleteUser}
+                                        onResetPassword={handleResetPassword}
                                     />
                                 )
                             ))}
@@ -802,6 +961,18 @@ export default function UsersPage() {
                 isEdit={true}
                 onCreateUser={handleCreateUserSubmit}
                 onUpdateUser={handleUpdateUserSubmit}
+            />
+
+            {/* Modal de Resetar Senha */}
+            <ResetPasswordModal
+                open={showResetPasswordModal}
+                onClose={() => {
+                    setShowResetPasswordModal(false)
+                    setUserToResetPassword(null)
+                }}
+                onConfirm={handleConfirmResetPassword}
+                userName={userToResetPassword?.name || 'Usuário'}
+                loading={resettingPassword}
             />
 
             {/* Modal de Confirmação de Exclusão */}

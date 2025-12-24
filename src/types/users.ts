@@ -2,16 +2,22 @@
 
 export type UserRole = 'ADMINISTRADOR' | 'MEDICO' | 'RECEPCIONISTA' | 'SERVICOS_GERAIS';
 
+export interface UserProfile {
+  id: string;
+  role: UserRole;
+  phone: string;
+  document: string | null;
+  isActive: boolean;
+  lastLogin: string | null;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
-  phone?: string;
-  document?: string;
-  isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  profile: UserProfile;
 }
 
 export interface CreateUserRequest {
@@ -68,8 +74,7 @@ export interface ToggleStatusResponse {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
-  isActive: boolean;
+  profile: UserProfile;
   updatedAt: string;
 }
 

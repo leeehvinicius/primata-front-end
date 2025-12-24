@@ -307,7 +307,8 @@ export function useUsers(): UseUsersState & UseUsersActions {
     }
     
     initializeData()
-  }, [loadRoles, loadStats, loadUsers]) // Carregamento inicial quando as funções mudarem
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Executa apenas uma vez na montagem do componente
 
   return {
     ...state,
