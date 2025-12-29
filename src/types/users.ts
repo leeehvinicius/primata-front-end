@@ -4,6 +4,7 @@ export type UserRole =
   | 'ADMINISTRADOR'
   | 'MEDICO'
   | 'RECEPCIONISTA'
+  | 'TÉCNICO_DE_ENFERMAGEM'
   | 'SERVICOS_GERAIS'
   | 'TECNICO'
   | 'ESTAGIARIO';

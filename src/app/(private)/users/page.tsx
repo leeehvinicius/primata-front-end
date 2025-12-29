@@ -52,7 +52,7 @@ const editUserSchema = z.object({
 // Removido: tipos não utilizados
 
 // ===== Tipos e Utils =====
-type UserRole = 'ADMINISTRADOR' | 'MEDICO' | 'RECEPCIONISTA' | 'SERVICOS_GERAIS'
+type UserRole = 'ADMINISTRADOR' | 'MEDICO' | 'RECEPCIONISTA' | 'TÉCNICO_DE_ENFERMAGEM' | 'SERVICOS_GERAIS' | 'TECNICO' | 'ESTAGIARIO'
 
 type UserFormValues = {
     name: string
@@ -85,12 +85,33 @@ const roleConfig = {
         bg: 'bg-emerald-100',
         border: 'border-emerald-200'
     },
+    'TÉCNICO_DE_ENFERMAGEM': {
+        icon: Stethoscope,
+        name: 'Técnico de Enfermagem',
+        color: 'text-teal-600',
+        bg: 'bg-teal-100',
+        border: 'border-teal-200'
+    },
     'SERVICOS_GERAIS': {
         icon: Wrench,
         name: 'Serviços Gerais',
         color: 'text-amber-600',
         bg: 'bg-amber-100',
         border: 'border-amber-200'
+    },
+    'TECNICO': {
+        icon: Stethoscope,
+        name: 'Técnico',
+        color: 'text-indigo-600',
+        bg: 'bg-indigo-100',
+        border: 'border-indigo-200'
+    },
+    'ESTAGIARIO': {
+        icon: Stethoscope,
+        name: 'Estagiário',
+        color: 'text-gray-600',
+        bg: 'bg-gray-100',
+        border: 'border-gray-200'
     }
 }
 
@@ -296,6 +317,7 @@ function UserFormModal({
     { value: 'ADMINISTRADOR', label: 'Administrador' },
     { value: 'MEDICO', label: 'Médico' },
     { value: 'RECEPCIONISTA', label: 'Recepcionista' },
+    { value: 'TÉCNICO_DE_ENFERMAGEM', label: 'Técnico de Enfermagem' },
     { value: 'SERVICOS_GERAIS', label: 'Serviços Gerais' },
     { value: 'TECNICO', label: 'Técnico' },
     { value: 'ESTAGIARIO', label: 'Estagiário' }
