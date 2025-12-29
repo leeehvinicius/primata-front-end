@@ -1,6 +1,12 @@
 // Tipos para usuários baseados na API
 
-export type UserRole = 'ADMINISTRADOR' | 'MEDICO' | 'RECEPCIONISTA' | 'SERVICOS_GERAIS';
+export type UserRole =
+  | 'ADMINISTRADOR'
+  | 'MEDICO'
+  | 'RECEPCIONISTA'
+  | 'SERVICOS_GERAIS'
+  | 'TECNICO'
+  | 'ESTAGIARIO';
 
 export interface UserProfile {
   id: string;
