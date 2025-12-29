@@ -293,11 +293,13 @@ function UserFormModal({
     }
 
     const roles = [
-        { value: 'ADMINISTRADOR', label: 'Administrador' },
-        { value: 'MEDICO', label: 'Médico' },
-        { value: 'RECEPCIONISTA', label: 'Recepcionista' },
-        { value: 'SERVICOS_GERAIS', label: 'Serviços Gerais' }
-    ]
+    { value: 'ADMINISTRADOR', label: 'Administrador' },
+    { value: 'MEDICO', label: 'Médico' },
+    { value: 'RECEPCIONISTA', label: 'Recepcionista' },
+    { value: 'SERVICOS_GERAIS', label: 'Serviços Gerais' },
+    { value: 'TECNICO', label: 'Técnico' },
+    { value: 'ESTAGIARIO', label: 'Estagiário' }
+    ];
 
     return (
         <Modal
