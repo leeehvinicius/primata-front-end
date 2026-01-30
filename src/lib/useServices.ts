@@ -24,7 +24,7 @@ export function useServices() {
   const [stats, setStats] = useState<ServiceStats | null>(null)
   const [filters, setFilters] = useState<ServiceFilters>({
     page: 1,
-    limit: 10,
+    limit: 500,
     sortBy: 'name',
     sortOrder: 'asc'
   })
