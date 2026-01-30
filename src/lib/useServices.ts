@@ -38,7 +38,7 @@ export function useServices() {
       // Usa os filtros padrão se não foram fornecidos novos filtros
       const defaultFilters = {
         page: 1,
-        limit: 10,
+        limit: 500,
         sortBy: 'name',
         sortOrder: 'asc' as const
       }
@@ -87,7 +87,7 @@ export function useServices() {
       
       const response = await ServiceService.listServices({
         page: 1,
-        limit: 10,
+        limit: 500,
         sortBy: 'name',
         sortOrder: 'asc',
         search: searchTerm
