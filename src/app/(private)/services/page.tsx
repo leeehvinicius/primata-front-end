@@ -657,7 +657,7 @@ export default function ServicesPage() {
         )
     }
 
-    const safePagination = pagination || { page: 1, limit: 10, total: 0, totalPages: 0 }
+    const safePagination = pagination || { page: 1, limit: 500, total: 0, totalPages: 0 }
 
     return (
         <div className="space-y-6">
