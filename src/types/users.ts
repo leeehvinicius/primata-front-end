@@ -39,6 +39,7 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   name?: string;
   phone?: string;
+  document?: string;
   role?: UserRole;
   isActive?: boolean;
 }

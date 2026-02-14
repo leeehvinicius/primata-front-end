@@ -36,6 +36,7 @@ const createUserSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.string().email("Email inválido"),
     phone: z.string().optional(),
+    document: z.string().optional(),
     role: z.string().min(1, "Selecione um perfil"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     isActive: z.boolean()
@@ -45,6 +46,7 @@ const editUserSchema = z.object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.string().email("Email inválido"),
     phone: z.string().optional(),
+    document: z.string().optional(),
     role: z.string().min(1, "Selecione um perfil"),
     isActive: z.boolean()
 })
@@ -58,6 +60,7 @@ type UserFormValues = {
     name: string
     email: string
     phone?: string
+    document?: string
     role: string
     isActive: boolean
     password?: string
@@ -182,6 +185,9 @@ function UserRow({ user, onEdit, onToggleStatus, onDelete, onResetPassword }: {
                 )}
             </td>
             <td className="py-4 pr-4">
+                <span className="text-gray-600">{user.profile?.document || '-'}</span>
+            </td>
+            <td className="py-4 pr-4">
                 <div className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${
                     user.profile?.isActive === true
                         ? 'bg-green-100 text-green-700 border border-green-200' 
@@ -261,6 +267,7 @@ function UserFormModal({
             name: '',
             email: '',
             phone: '',
+            document: '',
             role: '',
             password: '',
             isActive: true
@@ -274,6 +281,7 @@ function UserFormModal({
                 name: user.name || '',
                 email: user.email || '',
                 phone: user.profile?.phone || '',
+                document: user.profile?.document ?? '',
                 role: user.profile?.role || '',
                 isActive: user.profile?.isActive !== false
             }
@@ -281,6 +289,7 @@ function UserFormModal({
             setValue('name', formData.name)
             setValue('email', formData.email)
             setValue('phone', formData.phone)
+            setValue('document', formData.document)
             setValue('role', formData.role)
             setValue('isActive', formData.isActive)
         } else if (open && !isEdit) {
@@ -363,6 +372,15 @@ function UserFormModal({
                             className="input" 
                             {...register("phone")}
                             placeholder="(11) 99999-9999"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm text-gray-700 mb-2">CPF</label>
+                        <input 
+                            className="input" 
+                            {...register("document")}
+                            placeholder="000.000.000-00"
                         />
                     </div>
 
@@ -762,7 +780,8 @@ export default function UsersPage() {
                 email: data.email,
                 password: data.password,
                 role: data.role,
-                phone: data.phone
+                phone: data.phone,
+                document: data.document
             })
             setShowCreateModal(false)
         } catch (error) {
@@ -776,6 +795,7 @@ export default function UsersPage() {
                 name: data.name,
                 role: data.role,
                 phone: data.phone,
+                document: data.document,
                 isActive: data.isActive
             }
             
@@ -930,6 +950,7 @@ export default function UsersPage() {
                                 <th className="py-3 pr-4 font-medium">Usuário</th>
                                 <th className="py-3 pr-4 font-medium">Email</th>
                                 <th className="py-3 pr-4 font-medium">Telefone</th>
+                                <th className="py-3 pr-4 font-medium">CPF</th>
                                 <th className="py-3 pr-4 font-medium">Status</th>
                                 <th className="py-3 pr-4 font-medium">Criado em</th>
                                 <th className="py-3 pr-0 font-medium">Ações</th>
@@ -950,7 +971,7 @@ export default function UsersPage() {
                             ))}
                             {!users.length && !loading && (
                                 <tr>
-                                    <td colSpan={6} className="py-12 text-center">
+                                    <td colSpan={7} className="py-12 text-center">
                                         <div className="flex flex-col items-center gap-4">
                                             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                                                 <Users className="text-gray-400" size={32} />
