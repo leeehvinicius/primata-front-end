@@ -44,6 +44,15 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n))
 }
 
+function parseScheduledDateLocal(scheduledDate: string) {
+  const datePart = scheduledDate?.split('T')[0] ?? ''
+  const [year, month, day] = datePart.split('-').map(Number)
+  if (year && month && day) {
+    return new Date(year, month - 1, day)
+  }
+  return new Date(scheduledDate)
+}
+
 type LayoutAppointment = {
   id: string
   title: string
@@ -108,13 +117,13 @@ export default function AppointmentsListPage() {
       })
       .map(app => {
         const [startHour, startMin] = app.startTime.split(':').map(Number)
-        const startDate = new Date(app.scheduledDate)
+        const startDate = parseScheduledDateLocal(app.scheduledDate)
         startDate.setHours(startHour, startMin, 0, 0)
 
         let endDate: Date
         if (app.endTime) {
           const [endHour, endMin] = app.endTime.split(':').map(Number)
-          endDate = new Date(app.scheduledDate)
+          endDate = parseScheduledDateLocal(app.scheduledDate)
           endDate.setHours(endHour, endMin, 0, 0)
         } else {
           endDate = new Date(startDate)
