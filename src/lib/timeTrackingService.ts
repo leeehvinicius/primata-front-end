@@ -1,4 +1,5 @@
 import { api } from './api'
+import { config } from './config'
 import type {
   TimeTrackingRecord,
   TimeTrackingListItem,
@@ -50,6 +51,39 @@ export class TimeTrackingService {
       status: (r.status || 'PENDING') as unknown as TimeTrackingRecord['status'],
       timestamp: r.timestamp || r.createdAt || new Date().toISOString(),
     }
+  }
+
+  private static normalizePhotoUrl(photoUrl?: string): string | undefined {
+    if (!photoUrl) {
+      return undefined
+    }
+
+    const raw = String(photoUrl).trim()
+    if (!raw) {
+      return undefined
+    }
+
+    let apiOrigin = ''
+    try {
+      apiOrigin = new URL(config.apiUrl).origin
+    } catch {
+      apiOrigin = ''
+    }
+
+    if (raw.startsWith('/')) {
+      return apiOrigin ? `${apiOrigin}${raw}` : raw
+    }
+
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(raw) && apiOrigin) {
+      try {
+        const pathName = new URL(raw).pathname
+        return `${apiOrigin}${pathName}`
+      } catch {
+        return raw
+      }
+    }
+
+    return raw
   }
 
   static async register(data: RegisterTimeTrackingDto): Promise<TimeTrackingRecord> {
@@ -152,7 +186,11 @@ export class TimeTrackingService {
     }
     // If already in expected shape
     if (rr.id && rr.type && rr.status && (rr.timestamp || rr.createdAt)) {
-      return rr as TimeTrackingRecord
+      const shaped = rr as TimeTrackingRecord
+      return {
+        ...shaped,
+        photoUrl: this.normalizePhotoUrl(shaped.photoUrl),
+      }
     }
     // Adapter from flat fields
     const latitude = rr?.latitude != null ? Number(rr.latitude) : undefined
@@ -167,7 +205,7 @@ export class TimeTrackingService {
       status: rr.status as unknown as TimeTrackingRecord['status'],
       timestamp: rr.timestamp || rr.createdAt || new Date().toISOString(),
       location: latitude != null && longitude != null ? { latitude, longitude, accuracy, address: rr.address, city: rr.city, state: rr.state, country: rr.country } : undefined,
-      photoUrl: rr.photoUrl || undefined,
+      photoUrl: this.normalizePhotoUrl(rr.photoUrl),
       notes: rr.notes || undefined,
     }
   }
