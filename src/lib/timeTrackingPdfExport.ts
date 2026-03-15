@@ -63,13 +63,6 @@ function formatType(value: string): string {
   return value
 }
 
-function formatStatus(value: string): string {
-  if (value === 'PENDING') return 'Pendente'
-  if (value === 'APPROVED') return 'Aprovado'
-  if (value === 'REJECTED') return 'Rejeitado'
-  return value
-}
-
 function getPublicAssetUrl(fileName: string): string {
   return `${window.location.origin}/${encodeURIComponent(fileName)}`
 }
@@ -110,7 +103,7 @@ function buildPointsText(group: TimeTrackingDailyByUserGroup): string {
   if (records.length === 0) return 'Sem pontos'
 
   return records
-    .map((record) => `${formatHour(record.timestamp)} - ${formatType(record.type)} - ${formatStatus(record.status)}`)
+    .map((record) => `${formatHour(record.timestamp)} - ${formatType(record.type)}`)
     .join(' | ')
 }
 
@@ -273,4 +266,3 @@ export async function exportTimeTrackingReportToPDF(
 
   doc.save(`relatorio_ponto_${new Date().toISOString().slice(0, 10)}.pdf`)
 }
-

@@ -38,13 +38,6 @@ const formatType = (value: string): string => {
   return value
 }
 
-const formatStatus = (value: string): string => {
-  if (value === 'PENDING') return 'Pendente'
-  if (value === 'APPROVED') return 'Aprovado'
-  if (value === 'REJECTED') return 'Rejeitado'
-  return value
-}
-
 const formatDateInput = (date: Date): string => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -273,7 +266,7 @@ export default function TimeTrackingListPage() {
                   <div className="flex flex-wrap gap-2">
                     {(group.records ?? []).map((record) => (
                       <span key={record.id} className="px-2 py-1 rounded-md bg-gray-100 border text-xs">
-                        {formatHour(record.timestamp)} - {formatType(record.type)} - {formatStatus(record.status)}
+                        {formatHour(record.timestamp)} - {formatType(record.type)}
                       </span>
                     ))}
                     {(!(Array.isArray(group.records) && group.records.length > 0)) && <span className="text-gray-500">Sem pontos</span>}
@@ -347,7 +340,6 @@ export default function TimeTrackingListPage() {
                     <div><span className="text-gray-500">ID:</span> {selectedRecord.id}</div>
                     <div><span className="text-gray-500">Usuario:</span> {selectedRecord.user?.name || selectedRecord.userId || '-'}</div>
                     <div><span className="text-gray-500">Tipo:</span> {formatType(selectedRecord.type)}</div>
-                    <div><span className="text-gray-500">Status:</span> {formatStatus(selectedRecord.status)}</div>
                     <div className="md:col-span-2"><span className="text-gray-500">Data/Hora:</span> {formatDateTime(selectedRecord.timestamp)}</div>
                     {selectedRecord.location && (
                       <div className="md:col-span-2">
