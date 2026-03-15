@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { TimeTrackingService } from '@/lib/timeTrackingService'
 import { UserService } from '@/lib/userService'
+import { exportTimeTrackingReportToPDF } from '@/lib/timeTrackingPdfExport'
 import type {
   TimeTrackingDailyByUserResponse,
   TimeTrackingQueryDto,
@@ -63,6 +64,7 @@ export default function TimeTrackingListPage() {
   const [selectedRecord, setSelectedRecord] = useState<TimeTrackingRecord | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [validationReason, setValidationReason] = useState('')
+  const [exportingPdf, setExportingPdf] = useState(false)
 
   const [filters, setFilters] = useState<TimeTrackingQueryDto>(() => {
     const today = new Date()
@@ -179,6 +181,33 @@ export default function TimeTrackingListPage() {
     setFilters((prev) => ({ ...prev, [name]: parsedValue, page: 1 }))
   }
 
+  const handleExportPdf = async (): Promise<void> => {
+    setExportingPdf(true)
+    setError(null)
+    try {
+      const response = await TimeTrackingService.listDailyByUser({
+        ...filters,
+        page: 1,
+        limit: 500,
+      })
+
+      if (!Array.isArray(response.items) || response.items.length === 0) {
+        setError('Nao ha dados para gerar o PDF com os filtros atuais.')
+        return
+      }
+
+      await exportTimeTrackingReportToPDF(response.items, {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      })
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Erro ao gerar PDF do relatorio'
+      setError(message)
+    } finally {
+      setExportingPdf(false)
+    }
+  }
+
   return (
     <>
       <div className="p-6 space-y-4">
@@ -187,7 +216,14 @@ export default function TimeTrackingListPage() {
           <div className="flex gap-2">
             <Link href="/time-tracking/register" className="px-3 py-2 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700">Registrar Ponto</Link>
             <Link href="/time-tracking/settings" className="px-3 py-2 rounded-md bg-gray-100 text-gray-800 text-sm hover:bg-gray-200">Minhas Configuracoes</Link>
-            <Link href="/time-tracking/reports" className="px-3 py-2 rounded-md bg-gray-100 text-gray-800 text-sm hover:bg-gray-200">Relatorios</Link>
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              disabled={exportingPdf || loading}
+              className="px-3 py-2 rounded-md bg-gray-100 text-gray-800 text-sm hover:bg-gray-200 disabled:opacity-50"
+            >
+              {exportingPdf ? 'Gerando PDF...' : 'Relatorios (PDF)'}
+            </button>
           </div>
         </div>
 
