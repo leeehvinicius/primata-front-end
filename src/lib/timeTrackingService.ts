@@ -1,7 +1,10 @@
 import { api } from './api'
 import type {
   TimeTrackingRecord,
+  TimeTrackingListItem,
   TimeTrackingListResponse,
+  TimeTrackingDailyByUserGroup,
+  TimeTrackingDailyByUserResponse,
   RegisterTimeTrackingDto,
   ValidateTimeTrackingDto,
   TimeTrackingQueryDto,
@@ -16,23 +19,54 @@ import type {
 } from '@/types/timeTracking'
 
 export class TimeTrackingService {
-  static async register(data: RegisterTimeTrackingDto): Promise<TimeTrackingRecord> {
-    return api.post<TimeTrackingRecord>('/time-tracking/register', data)
-  }
-
-  static async list(params: TimeTrackingQueryDto = {}): Promise<TimeTrackingListResponse> {
+  private static buildQueryString(params: object = {}): string {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         searchParams.append(key, String(value))
       }
     })
-    const qs = searchParams.toString()
+    return searchParams.toString()
+  }
+
+  private static normalizeListItem(record: unknown): TimeTrackingListItem {
+    const r = (record ?? {}) as {
+      id?: string
+      userId?: string
+      cpf?: string
+      type?: string
+      status?: string
+      timestamp?: string
+      createdAt?: string
+      user?: { id?: string; name?: string }
+    }
+    const userId = r.userId || r.user?.id
+    return {
+      id: r.id || '',
+      userId,
+      cpf: r.cpf,
+      user: userId ? { id: userId, name: r.user?.name } : undefined,
+      type: (r.type || 'CHECK_IN') as unknown as TimeTrackingRecord['type'],
+      status: (r.status || 'PENDING') as unknown as TimeTrackingRecord['status'],
+      timestamp: r.timestamp || r.createdAt || new Date().toISOString(),
+    }
+  }
+
+  static async register(data: RegisterTimeTrackingDto): Promise<TimeTrackingRecord> {
+    return api.post<TimeTrackingRecord>('/time-tracking/register', data)
+  }
+
+  static async list(params: TimeTrackingQueryDto = {}): Promise<TimeTrackingListResponse> {
+    const qs = this.buildQueryString(params)
     const raw = await api.get<unknown>(`/time-tracking${qs ? `?${qs}` : ''}`)
 
     // Adapter: support both { items, pagination } and { data, total, page, limit }
     if (raw && typeof raw === 'object' && Array.isArray((raw as { items?: unknown[] }).items)) {
-      return raw as TimeTrackingListResponse
+      const obj = raw as { items: unknown[]; pagination?: TimeTrackingListResponse['pagination'] }
+      return {
+        items: obj.items.map((item) => this.normalizeListItem(item)),
+        pagination: obj.pagination,
+      }
     }
 
     const obj = (raw ?? {}) as { data?: unknown[]; page?: number; limit?: number; total?: number }
@@ -42,13 +76,50 @@ export class TimeTrackingService {
     const total = Number(obj.total) || dataArray.length
     const totalPages = Math.max(1, Math.ceil(total / limit))
 
-    const items = dataArray.map((rUnknown) => {
-      const r = rUnknown as { id: string; type: string; status: string; timestamp?: string; createdAt?: string }
+    const items = dataArray.map((item) => this.normalizeListItem(item))
+
+    return { items, pagination: { page, limit, total, totalPages } }
+  }
+
+  static async listDailyByUser(params: TimeTrackingQueryDto = {}): Promise<TimeTrackingDailyByUserResponse> {
+    const qs = this.buildQueryString(params)
+    const raw = await api.get<unknown>(`/time-tracking/daily-by-user${qs ? `?${qs}` : ''}`)
+
+    if (raw && typeof raw === 'object' && Array.isArray((raw as { items?: unknown[] }).items)) {
+      const obj = raw as { items: unknown[]; pagination?: TimeTrackingDailyByUserResponse['pagination'] }
       return {
-        id: r.id,
-        type: r.type as unknown as TimeTrackingRecord['type'],
-        status: r.status as unknown as TimeTrackingRecord['status'],
-        timestamp: r.timestamp || r.createdAt || new Date().toISOString(),
+        items: obj.items.map((group) => {
+          const g = (group ?? {}) as TimeTrackingDailyByUserGroup
+          return {
+            ...g,
+            records: Array.isArray(g.records) ? g.records.map((record) => this.normalizeListItem(record)) : [],
+          }
+        }),
+        pagination: obj.pagination,
+      }
+    }
+
+    const obj = (raw ?? {}) as { data?: unknown[]; page?: number; limit?: number; total?: number }
+    const dataArray = Array.isArray(obj.data) ? obj.data : []
+    const page = Number(obj.page) || params.page || 1
+    const limit = Number(obj.limit) || params.limit || 10
+    const total = Number(obj.total) || dataArray.length
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+
+    const items = dataArray.map((groupUnknown) => {
+      const group = (groupUnknown ?? {}) as {
+        date?: string
+        userId?: string
+        userName?: string
+        cpf?: string
+        records?: unknown[]
+      }
+      return {
+        date: group.date || '',
+        userId: group.userId || '',
+        userName: group.userName || 'Sem nome',
+        cpf: group.cpf,
+        records: Array.isArray(group.records) ? group.records.map((record) => this.normalizeListItem(record)) : [],
       }
     })
 

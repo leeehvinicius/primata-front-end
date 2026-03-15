@@ -52,8 +52,23 @@ export interface TimeTrackingRecord {
   notes?: string
 }
 
+export type TimeTrackingListItem = Pick<TimeTrackingRecord, 'id' | 'userId' | 'cpf' | 'user' | 'type' | 'status' | 'timestamp'>
+
 export interface TimeTrackingListResponse {
-  items: Pick<TimeTrackingRecord, 'id' | 'type' | 'status' | 'timestamp'>[]
+  items: TimeTrackingListItem[]
+  pagination?: { page: number; limit: number; total: number; totalPages: number }
+}
+
+export interface TimeTrackingDailyByUserGroup {
+  date: string
+  userId: string
+  userName: string
+  cpf?: string
+  records: TimeTrackingListItem[]
+}
+
+export interface TimeTrackingDailyByUserResponse {
+  items: TimeTrackingDailyByUserGroup[]
   pagination?: { page: number; limit: number; total: number; totalPages: number }
 }
 
