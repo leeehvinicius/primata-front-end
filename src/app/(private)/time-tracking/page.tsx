@@ -162,7 +162,6 @@ export default function TimeTrackingListPage() {
     filters.limit,
     filters.userId,
     filters.type,
-    filters.status,
     filters.startDate,
     filters.endDate,
     filters.sortOrder,
@@ -220,7 +219,7 @@ export default function TimeTrackingListPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-white p-4 rounded-lg border">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-lg border">
           <select name="userId" value={filters.userId ?? ''} onChange={handleChange} className="border rounded-md p-2 text-sm">
             <option value="">Funcionario</option>
             {employees.map((employee) => (
@@ -231,12 +230,6 @@ export default function TimeTrackingListPage() {
             <option value="">Tipo</option>
             <option value="CHECK_IN">Entrada</option>
             <option value="CHECK_OUT">Saida</option>
-          </select>
-          <select name="status" value={filters.status ?? ''} onChange={handleChange} className="border rounded-md p-2 text-sm">
-            <option value="">Status</option>
-            <option value="PENDING">Pendente</option>
-            <option value="APPROVED">Aprovado</option>
-            <option value="REJECTED">Rejeitado</option>
           </select>
           <input type="date" name="startDate" value={filters.startDate || ''} onChange={handleChange} className="border rounded-md p-2 text-sm" />
           <input type="date" name="endDate" value={filters.endDate || ''} onChange={handleChange} className="border rounded-md p-2 text-sm" />
