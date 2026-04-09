@@ -114,13 +114,6 @@ function formatWorkedHours(value?: number): string {
   return `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`
 }
 
-function formatCurrency(value?: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value || 0)
-}
-
 export async function exportTimeTrackingReportToPDF(
   groups: TimeTrackingDailyByUserGroup[],
   filters?: { startDate?: string; endDate?: string },
@@ -194,11 +187,10 @@ export async function exportTimeTrackingReportToPDF(
   const drawTableHeader = () => {
     const headerY = y
     const rowH = 8
-    const colFuncionario = 36
-    const colDia = 20
-    const colHoras = 20
-    const colValor = 28
-    const colPontos = contentWidth - colFuncionario - colDia - colHoras - colValor
+    const colFuncionario = 42
+    const colDia = 24
+    const colHoras = 22
+    const colPontos = contentWidth - colFuncionario - colDia - colHoras
 
     setFillColorHex(doc, THEME.grayBg)
     setDrawColorHex(doc, THEME.grayBorder)
@@ -210,11 +202,10 @@ export async function exportTimeTrackingReportToPDF(
     doc.text('Funcionario', margin + 3, headerY + 5.5)
     doc.text('Dia', margin + colFuncionario + 3, headerY + 5.5)
     doc.text('Horas', margin + colFuncionario + colDia + 3, headerY + 5.5)
-    doc.text('Valor', margin + colFuncionario + colDia + colHoras + 3, headerY + 5.5)
-    doc.text('Pontos do dia', margin + colFuncionario + colDia + colHoras + colValor + 3, headerY + 5.5)
+    doc.text('Pontos do dia', margin + colFuncionario + colDia + colHoras + 3, headerY + 5.5)
 
     y += rowH
-    return { colFuncionario, colDia, colHoras, colValor, colPontos }
+    return { colFuncionario, colDia, colHoras, colPontos }
   }
 
   await drawHeader()
@@ -245,7 +236,6 @@ export async function exportTimeTrackingReportToPDF(
     const employee = group.userName || 'Sem nome'
     const day = formatDay(group.date)
     const hoursText = formatWorkedHours(group.workedHours)
-    const valueText = `${formatCurrency(group.dayValue)} (${formatCurrency(group.hourlyRate)}/h)`
     const pointsText = buildPointsText(group)
 
     doc.setFont('helvetica', 'normal')
@@ -253,9 +243,8 @@ export async function exportTimeTrackingReportToPDF(
 
     const employeeLines = doc.splitTextToSize(employee, table.colFuncionario - 6)
     const hoursLines = doc.splitTextToSize(hoursText, table.colHoras - 6)
-    const valueLines = doc.splitTextToSize(valueText, table.colValor - 6)
     const pointsLines = doc.splitTextToSize(pointsText, table.colPontos - 6)
-    const lineCount = Math.max(employeeLines.length, hoursLines.length, valueLines.length, pointsLines.length, 1)
+    const lineCount = Math.max(employeeLines.length, hoursLines.length, pointsLines.length, 1)
     const rowH = Math.max(8, lineCount * 4 + 3)
 
     checkPageBreak(rowH + 2, () => {
@@ -271,8 +260,7 @@ export async function exportTimeTrackingReportToPDF(
     doc.text(employeeLines, margin + 3, y + 5)
     doc.text(day, margin + table.colFuncionario + 3, y + 5)
     doc.text(hoursLines, margin + table.colFuncionario + table.colDia + 3, y + 5)
-    doc.text(valueLines, margin + table.colFuncionario + table.colDia + table.colHoras + 3, y + 5)
-    doc.text(pointsLines, margin + table.colFuncionario + table.colDia + table.colHoras + table.colValor + 3, y + 5)
+    doc.text(pointsLines, margin + table.colFuncionario + table.colDia + table.colHoras + 3, y + 5)
 
     y += rowH
   })
