@@ -45,6 +45,20 @@ const formatDateInput = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
+const formatWorkedHours = (value?: number): string => {
+  const totalMinutes = Math.max(0, Math.round((value || 0) * 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`
+}
+
+const formatCurrency = (value?: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value || 0)
+}
+
 export default function TimeTrackingListPage() {
   const [data, setData] = useState<TimeTrackingDailyByUserResponse | null>(null)
   const [employees, setEmployees] = useState<User[]>([])
@@ -72,6 +86,10 @@ export default function TimeTrackingListPage() {
   })
 
   const totalPages = useMemo(() => data?.pagination?.totalPages ?? 1, [data])
+  const totalWorkedHours = useMemo(
+    () => (data?.items ?? []).reduce((sum, group) => sum + (group.workedHours || 0), 0),
+    [data],
+  )
 
   const fetchData = async (): Promise<void> => {
     setLoading(true)
@@ -242,10 +260,17 @@ export default function TimeTrackingListPage() {
         </div>
 
         <div className="bg-white rounded-lg border overflow-hidden">
-          <div className="grid grid-cols-4 gap-2 p-3 bg-gray-50 text-xs font-semibold text-gray-600">
+          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b">
+            <div className="text-xs font-semibold text-gray-600">
+              Total de horas no filtro: <span className="text-gray-900">{formatWorkedHours(totalWorkedHours)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-6 gap-2 p-3 bg-gray-50 text-xs font-semibold text-gray-600">
             <div>Funcionario</div>
             <div>Dia</div>
             <div>Pontos do dia</div>
+            <div>Horas do dia</div>
+            <div>Valor do dia</div>
             <div>Acoes</div>
           </div>
           {loading && <div className="p-4 text-sm">Carregando...</div>}
@@ -253,7 +278,7 @@ export default function TimeTrackingListPage() {
           {!loading && !error && (
             <div className="divide-y">
               {(data?.items ?? []).map((group) => (
-                <div key={`${group.userId}-${group.date}`} className="grid grid-cols-4 gap-2 p-3 text-sm">
+                <div key={`${group.userId}-${group.date}`} className="grid grid-cols-6 gap-2 p-3 text-sm">
                   <div className="font-medium">{group.userName || 'Sem nome'}</div>
                   <div>{formatDay(group.date)}</div>
                   <div className="flex flex-wrap gap-2">
@@ -263,6 +288,11 @@ export default function TimeTrackingListPage() {
                       </span>
                     ))}
                     {(!(Array.isArray(group.records) && group.records.length > 0)) && <span className="text-gray-500">Sem pontos</span>}
+                  </div>
+                  <div>{formatWorkedHours(group.workedHours)}</div>
+                  <div>
+                    <div>{formatCurrency(group.dayValue)}</div>
+                    <div className="text-xs text-gray-500">{formatCurrency(group.hourlyRate)}/h</div>
                   </div>
                   <div className="flex flex-col gap-1">
                     {(group.records ?? []).map((record) => (

@@ -107,6 +107,20 @@ function buildPointsText(group: TimeTrackingDailyByUserGroup): string {
     .join(' | ')
 }
 
+function formatWorkedHours(value?: number): string {
+  const totalMinutes = Math.max(0, Math.round((value || 0) * 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`
+}
+
+function formatCurrency(value?: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value || 0)
+}
+
 export async function exportTimeTrackingReportToPDF(
   groups: TimeTrackingDailyByUserGroup[],
   filters?: { startDate?: string; endDate?: string },
@@ -180,9 +194,11 @@ export async function exportTimeTrackingReportToPDF(
   const drawTableHeader = () => {
     const headerY = y
     const rowH = 8
-    const colFuncionario = 52
-    const colDia = 25
-    const colPontos = contentWidth - colFuncionario - colDia
+    const colFuncionario = 36
+    const colDia = 20
+    const colHoras = 20
+    const colValor = 28
+    const colPontos = contentWidth - colFuncionario - colDia - colHoras - colValor
 
     setFillColorHex(doc, THEME.grayBg)
     setDrawColorHex(doc, THEME.grayBorder)
@@ -193,10 +209,12 @@ export async function exportTimeTrackingReportToPDF(
     setTextColorHex(doc, THEME.text)
     doc.text('Funcionario', margin + 3, headerY + 5.5)
     doc.text('Dia', margin + colFuncionario + 3, headerY + 5.5)
-    doc.text('Pontos do dia', margin + colFuncionario + colDia + 3, headerY + 5.5)
+    doc.text('Horas', margin + colFuncionario + colDia + 3, headerY + 5.5)
+    doc.text('Valor', margin + colFuncionario + colDia + colHoras + 3, headerY + 5.5)
+    doc.text('Pontos do dia', margin + colFuncionario + colDia + colHoras + colValor + 3, headerY + 5.5)
 
     y += rowH
-    return { colFuncionario, colDia, colPontos }
+    return { colFuncionario, colDia, colHoras, colValor, colPontos }
   }
 
   await drawHeader()
@@ -204,17 +222,18 @@ export async function exportTimeTrackingReportToPDF(
     (acc, group) => {
       acc.days += 1
       acc.points += Array.isArray(group.records) ? group.records.length : 0
+      acc.workedHours += group.workedHours || 0
       acc.users.add(group.userId)
       return acc
     },
-    { days: 0, points: 0, users: new Set<string>() },
+    { days: 0, points: 0, workedHours: 0, users: new Set<string>() },
   )
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   setTextColorHex(doc, THEME.text)
   doc.text(
-    `Funcionarios: ${totals.users.size}   Dias: ${totals.days}   Pontos: ${totals.points}`,
+    `Funcionarios: ${totals.users.size}   Dias: ${totals.days}   Pontos: ${totals.points}   Horas totais: ${formatWorkedHours(totals.workedHours)}`,
     margin,
     y,
   )
@@ -225,14 +244,18 @@ export async function exportTimeTrackingReportToPDF(
   groups.forEach((group, index) => {
     const employee = group.userName || 'Sem nome'
     const day = formatDay(group.date)
+    const hoursText = formatWorkedHours(group.workedHours)
+    const valueText = `${formatCurrency(group.dayValue)} (${formatCurrency(group.hourlyRate)}/h)`
     const pointsText = buildPointsText(group)
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8.5)
 
     const employeeLines = doc.splitTextToSize(employee, table.colFuncionario - 6)
+    const hoursLines = doc.splitTextToSize(hoursText, table.colHoras - 6)
+    const valueLines = doc.splitTextToSize(valueText, table.colValor - 6)
     const pointsLines = doc.splitTextToSize(pointsText, table.colPontos - 6)
-    const lineCount = Math.max(employeeLines.length, pointsLines.length, 1)
+    const lineCount = Math.max(employeeLines.length, hoursLines.length, valueLines.length, pointsLines.length, 1)
     const rowH = Math.max(8, lineCount * 4 + 3)
 
     checkPageBreak(rowH + 2, () => {
@@ -247,7 +270,9 @@ export async function exportTimeTrackingReportToPDF(
     setTextColorHex(doc, THEME.text)
     doc.text(employeeLines, margin + 3, y + 5)
     doc.text(day, margin + table.colFuncionario + 3, y + 5)
-    doc.text(pointsLines, margin + table.colFuncionario + table.colDia + 3, y + 5)
+    doc.text(hoursLines, margin + table.colFuncionario + table.colDia + 3, y + 5)
+    doc.text(valueLines, margin + table.colFuncionario + table.colDia + table.colHoras + 3, y + 5)
+    doc.text(pointsLines, margin + table.colFuncionario + table.colDia + table.colHoras + table.colValor + 3, y + 5)
 
     y += rowH
   })

@@ -126,6 +126,9 @@ export class TimeTrackingService {
           const g = (group ?? {}) as TimeTrackingDailyByUserGroup
           return {
             ...g,
+            workedHours: typeof g.workedHours === 'number' ? g.workedHours : 0,
+            hourlyRate: typeof g.hourlyRate === 'number' ? g.hourlyRate : 0,
+            dayValue: typeof g.dayValue === 'number' ? g.dayValue : 0,
             records: Array.isArray(g.records) ? g.records.map((record) => this.normalizeListItem(record)) : [],
           }
         }),
@@ -153,6 +156,9 @@ export class TimeTrackingService {
         userId: group.userId || '',
         userName: group.userName || 'Sem nome',
         cpf: group.cpf,
+        workedHours: typeof (group as TimeTrackingDailyByUserGroup).workedHours === 'number' ? (group as TimeTrackingDailyByUserGroup).workedHours : 0,
+        hourlyRate: typeof (group as TimeTrackingDailyByUserGroup).hourlyRate === 'number' ? (group as TimeTrackingDailyByUserGroup).hourlyRate : 0,
+        dayValue: typeof (group as TimeTrackingDailyByUserGroup).dayValue === 'number' ? (group as TimeTrackingDailyByUserGroup).dayValue : 0,
         records: Array.isArray(group.records) ? group.records.map((record) => this.normalizeListItem(record)) : [],
       }
     })

@@ -64,6 +64,9 @@ export interface TimeTrackingDailyByUserGroup {
   userId: string
   userName: string
   cpf?: string
+  workedHours?: number
+  hourlyRate?: number
+  dayValue?: number
   records: TimeTrackingListItem[]
 }
 
